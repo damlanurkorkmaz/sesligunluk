@@ -10,7 +10,7 @@ import { moodInfo } from "@/lib/moods";
 import { MONTHS, dayKey, fromKey, shortWeekday } from "@/lib/dates";
 
 /** Mühür mürekkebi: ruh hali renginin kâğıtta okunur (4.5:1) koyu tonu. */
-const STAMP_INK: Record<string, string> = {
+export const STAMP_INK: Record<string, string> = {
   harika: "#5E6C50",
   iyi: "#5F6B54",
   normal: "#6F6253",

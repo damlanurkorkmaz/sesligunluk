@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { FlameIcon, MicIcon, NextIcon } from "./Icons";
 import { TabBar, type Tab } from "./TabBar";
+import { AudioPlayer } from "./AudioPlayer";
+import { STAMP_INK } from "./JournalScreen";
 import { type Entry, currentStreak } from "@/lib/entries";
-import { addDays, dayKey, greeting, longDate, shortWeekday } from "@/lib/dates";
+import { MONTHS, addDays, dayKey, greeting, shortWeekday, weekdayLong } from "@/lib/dates";
 import { moodInfo } from "@/lib/moods";
 import { MAX_RECORD_SECONDS } from "@/app.config";
 
@@ -15,6 +18,12 @@ const PROMPTS = [
   "Yarın neyi farklı yapmak isterdin?",
   "Bugünün en sessiz anı neydi?",
   "Bugün kendinle ilgili ne fark ettin?",
+];
+
+/** Kayıt butonunun üstündeki küçük, renkli ses dalgası (lavanta → mercan → adaçayı). */
+const HINT_WAVE: [number, string][] = [
+  [8, "#B9A8C9"], [14, "#BFA4BE"], [22, "#C79CA9"], [30, "#D1968F"], [22, "#D99182"],
+  [16, "#C69C88"], [26, "#B3A188"], [12, "#A6A38A"], [8, "#9AA58C"],
 ];
 
 export function TodayScreen({
@@ -36,128 +45,143 @@ export function TodayScreen({
   const today = byDate.get(todayKey) ?? null;
   const streak = currentStreak(entries, now);
   const week = Array.from({ length: 7 }, (_, i) => addDays(now, i - 6));
-  const prompt = PROMPTS[now.getDate() % PROMPTS.length];
+  const [promptIx, setPromptIx] = useState(now.getDate() % PROMPTS.length);
   const hour = now.getHours();
   const yesterdayKey = dayKey(addDays(now, -1));
   const yesterday = byDate.get(yesterdayKey) ?? null;
-  // Duruma göre: sabah dünü hatırlat, geç saatte seriyi koru.
-  const showYesterday = !today && hour >= 5 && hour < 12 && !!yesterday;
   const streakAtRisk = !today && hour >= 21 && streak > 0;
   const firstName = name.trim().split(/\s+/)[0] ?? "";
+  const mood = moodInfo(today?.mood);
+
+  const weekNote = today
+    ? "bugünkü sayfa tamam"
+    : streakAtRisk
+      ? `${streak} günlük serin bu gece bitmesin`
+      : `bugünle seri ${streak + 1} olur`;
 
   return (
-    <main className="screen">
-      <header className="pad row between" style={{ alignItems: "flex-start" }}>
-        <div className="col" style={{ gap: 4 }}>
-          <span className="small muted" style={{ fontWeight: 600 }}>{longDate(now)}</span>
-          <h1 className="title" style={firstName ? { fontSize: 26 } : undefined}>
-            {greeting(now)}
-            {firstName ? `, ${firstName}` : ""}
-          </h1>
-        </div>
-        <span className="pill" aria-label={`Seri: ${streak} gün`}>
-          <FlameIcon />
-          {streak} gün
-        </span>
-      </header>
-
-      <section className="card col" style={{ margin: "24px 24px 0", gap: 14 }} aria-label="Bu hafta">
-        <div className="row between" style={{ alignItems: "baseline" }}>
-          <strong style={{ fontSize: 15 }}>Bu hafta</strong>
-          <span style={{ fontSize: 13 }} className="muted">
-            {today ? "Bugünkü kayıt tamam" : `Bugünkü kayıtla seri ${streak + 1} olur`}
+    <main className="screen today">
+      {/* Üst yarı: defterin deri kapağı */}
+      <section className="today-cover">
+        <header className="today-head">
+          <div className="today-date">
+            <span className="today-daynum" aria-hidden="true">{now.getDate()}</span>
+            <div className="col" style={{ gap: 4, minWidth: 0 }}>
+              <span className="today-month">
+                {MONTHS[now.getMonth()]} · {weekdayLong(now)}
+              </span>
+              <h1 className="today-greet">
+                {greeting(now)}
+                {firstName ? `, ${firstName}` : ""}
+              </h1>
+            </div>
+          </div>
+          <span className="today-streak" aria-label={`Seri: ${streak} gün`}>
+            <FlameIcon />
+            {streak}
           </span>
-        </div>
-        <div className="week">
-          {week.map((d) => {
-            const key = dayKey(d);
-            const e = byDate.get(key);
-            const m = moodInfo(e?.mood);
-            const isToday = key === todayKey;
-            const label = `${shortWeekday(d)}: ${m ? m.label : e ? "kayıt var" : isToday ? "henüz kayıt yok" : "kayıt yok"}`;
-            return (
-              <button key={key} className={`week-day ${isToday ? "week-day--today" : ""}`} onClick={() => e && onOpen(key)} disabled={!e} aria-label={label} style={{ opacity: 1 }}>
-                {e ? (
-                  <span className="mood-dot" style={{ width: 34, height: 34, background: m?.color ?? "var(--lilac)" }} />
-                ) : isToday ? (
-                  <span className="today-ring" />
-                ) : (
-                  <span className="empty-ring" />
-                )}
-                {shortWeekday(d)}
-              </button>
-            );
-          })}
+        </header>
+
+        <div className="today-week" aria-label="Bu hafta">
+          <div className="today-week-head">
+            <span>BU HAFTA</span>
+            <span className={streakAtRisk ? "today-week-note today-week-note--risk" : "today-week-note"}>{weekNote}</span>
+          </div>
+          <div className="today-days">
+            {week.map((d) => {
+              const key = dayKey(d);
+              const e = byDate.get(key);
+              const m = moodInfo(e?.mood);
+              const isToday = key === todayKey;
+              const label = `${shortWeekday(d)}: ${m ? m.label : e ? "kayıt var" : isToday ? "henüz kayıt yok" : "kayıt yok"}`;
+              return (
+                <button key={key} className={`today-day ${isToday ? "today-day--today" : ""}`} onClick={() => e && onOpen(key)} disabled={!e} aria-label={label}>
+                  <span
+                    className={`seal ${e ? "" : isToday ? "seal--today" : "seal--empty"}`}
+                    style={e ? { background: m?.color ?? "var(--lilac)" } : undefined}
+                  />
+                  {shortWeekday(d)}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </section>
 
-      <section className="grow col" style={{ alignItems: "center", justifyContent: "center", gap: 18, padding: "24px 24px" }}>
+      {/* Bugünün sayfası kapağın üstüne biner */}
+      <section className="today-sheet">
+        <div className="paper" aria-hidden="true" />
         {today ? (
-          <>
-            <button className="card col today-page" onClick={() => onOpen(todayKey)} style={{ width: "100%", gap: 10, textAlign: "left" }}>
-              <span className="row between" style={{ width: "100%" }}>
-                <span className="eyebrow">Bugünün sayfası</span>
-                <NextIcon />
-              </span>
-              <span className="today-page-text">{excerpt(today.transcript) || "Kaydın hazır. Metni eklemek için dokun."}</span>
-              {moodInfo(today.mood) && (
-                <span className="row" style={{ gap: 8, fontSize: 14, fontWeight: 700 }}>
-                  <span className="mood-dot" style={{ width: 12, height: 12, background: moodInfo(today.mood)!.color }} />
-                  {moodInfo(today.mood)!.label}
+          <div className="today-sheet-body">
+            <div className="row between" style={{ alignItems: "flex-start" }}>
+              <span className="today-eyebrow">BUGÜNÜN SAYFASI</span>
+              {mood && (
+                <span className="mood-stamp today-stamp" style={{ color: STAMP_INK[mood.id] }}>
+                  {mood.label}
                 </span>
               )}
+            </div>
+            <button className="today-written" onClick={() => onOpen(todayKey)}>
+              <span className="today-written-text">{excerpt(today.transcript, 220) || "Kaydın hazır. Metni eklemek için dokun."}</span>
             </button>
-            <span className="small muted" style={{ textAlign: "center" }}>
-              Bugünlük bu kadar. Yarın akşam görüşürüz.
-            </span>
-          </>
-        ) : (
-          <>
-            {streakAtRisk && (
-              <span className="pill" role="status" style={{ background: "var(--lilac-tint)", border: 0, fontSize: 14 }}>
-                <FlameIcon />
-                {streak} günlük serin bu gece bitmesin
-              </span>
-            )}
-            <div className="rec-halo">
-              <button className="rec-btn" onClick={onRecord} aria-label="Bugünü kaydet">
-                <MicIcon />
+            {today.tags.length > 0 && <div className="paper-tags">{today.tags.map((t) => `#${t}`).join("  ")}</div>}
+            <div className="today-sheet-foot">
+              <AudioPlayer compact fileName={today.fileName} durationSec={today.durationSec} waveform={today.waveform ?? []} />
+              <button className="today-open" onClick={() => onOpen(todayKey)}>
+                Sayfayı aç <NextIcon />
               </button>
             </div>
-            <div className="col" style={{ alignItems: "center", gap: 4 }}>
-              <strong style={{ fontSize: 20, fontWeight: 800 }}>Bugünü kaydet</strong>
-              <span className="small muted">En fazla {MAX_RECORD_SECONDS} saniye</span>
+          </div>
+        ) : (
+          <div className="today-sheet-body today-sheet-body--empty">
+            <span className="today-eyebrow">AKLINA BİR ŞEY GELMEZSE</span>
+            <p className="today-prompt">“{PROMPTS[promptIx]}”</p>
+            <button className="today-shuffle" onClick={() => setPromptIx((i) => (i + 1) % PROMPTS.length)}>
+              ↻ başka bir soru
+            </button>
+            <div className="today-rec">
+              <div className="today-hint-wave" aria-hidden="true">
+                {HINT_WAVE.map(([h, c], i) => (
+                  <i key={i} style={{ height: h, background: c }} />
+                ))}
+              </div>
+              <button className="today-rec-btn" onClick={onRecord} aria-label="Bugünü kaydet">
+                <MicIcon />
+              </button>
+              <span className="today-rec-label">
+                Bugünü anlat <span>· {MAX_RECORD_SECONDS} sn</span>
+              </span>
             </div>
-          </>
+          </div>
         )}
       </section>
 
+      {today && yesterday && (
+        <button className="today-note" style={{ marginBottom: 0 }} onClick={() => onOpen(yesterdayKey)}>
+          <span className="seal" style={{ width: 26, height: 26, flexShrink: 0, background: moodInfo(yesterday.mood)?.color ?? "var(--lilac)" }} />
+          <span className="col" style={{ minWidth: 0, gap: 2, textAlign: "left" }}>
+            <span className="today-eyebrow" style={{ color: "var(--muted)" }}>DÜN</span>
+            <span className="today-note-text">{excerpt(yesterday.transcript, 90) || "Dünkü kaydını dinlemek için dokun."}</span>
+          </span>
+        </button>
+      )}
       {today ? (
-        <div className="pad" style={{ marginBottom: 12, display: "flex", justifyContent: "center" }}>
-          <button className="link-btn" style={{ color: "var(--muted)", fontWeight: 600, padding: 12 }} onClick={onRecord}>
+        <div className="today-after">
+          <span>Bugünlük bu kadar. Yarın akşam görüşürüz.</span>
+          <button className="link-btn" onClick={onRecord}>
             Yeniden kaydet
           </button>
         </div>
-      ) : showYesterday && yesterday ? (
-        <button className="card--lilac col" onClick={() => onOpen(yesterdayKey)} style={{ margin: "0 24px 20px", padding: "14px 16px", borderRadius: 16, gap: 4, border: 0, textAlign: "left" }}>
-          <span className="row between" style={{ width: "100%" }}>
-            <span className="eyebrow">Dün böyle geçmişti</span>
-            {moodInfo(yesterday.mood) && (
-              <span className="row" style={{ gap: 6, fontSize: 13, fontWeight: 700 }}>
-                <span className="mood-dot" style={{ width: 10, height: 10, background: moodInfo(yesterday.mood)!.color }} />
-                {moodInfo(yesterday.mood)!.label}
-              </span>
-            )}
-          </span>
-          <span className="today-page-text" style={{ fontSize: 15, lineHeight: 1.5 }}>
-            {excerpt(yesterday.transcript, 110) || "Dünkü kaydını dinlemek için dokun."}
+      ) : yesterday ? (
+        <button className="today-note" onClick={() => onOpen(yesterdayKey)}>
+          <span className="seal" style={{ width: 26, height: 26, flexShrink: 0, background: moodInfo(yesterday.mood)?.color ?? "var(--lilac)" }} />
+          <span className="col" style={{ minWidth: 0, gap: 2, textAlign: "left" }}>
+            <span className="today-eyebrow" style={{ color: "var(--muted)" }}>DÜN</span>
+            <span className="today-note-text">{excerpt(yesterday.transcript, 90) || "Dünkü kaydını dinlemek için dokun."}</span>
           </span>
         </button>
       ) : (
-        <aside className="card--lilac col" style={{ margin: "0 24px 20px", padding: "14px 16px", borderRadius: 16, gap: 2 }}>
-          <span className="eyebrow">Aklına bir şey gelmezse</span>
-          <span style={{ fontSize: 15, fontWeight: 600 }}>{prompt}</span>
-        </aside>
+        <div style={{ flexGrow: 1 }} />
       )}
 
       <TabBar active="today" onChange={onTab} />
@@ -173,4 +197,4 @@ function excerpt(text: string, max = 140): string {
   return `${cut.slice(0, cut.lastIndexOf(" ") > 40 ? cut.lastIndexOf(" ") : max)}…`;
 }
 
-export { PROMPTS };
+export { PROMPTS, excerpt };
