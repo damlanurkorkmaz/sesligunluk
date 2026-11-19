@@ -263,22 +263,72 @@ public class GunlukNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioRecorderDel
         }
         let request = SFSpeechURLRecognitionRequest(url: url)
         request.requiresOnDeviceRecognition = true
-        request.shouldReportPartialResults = false
+        // Ara sonuçları da alıyoruz: cihaz içi tanıma, konuşmadaki 1–2 saniyelik
+        // duraklamalarda kaydı parçalara bölüyor ve yeni parçaya geçince önceki
+        // metni sonuçtan siliyor (iOS 17/18'de bilinen davranış). Sadece son sonucu
+        // alırsak uzun kayıtlarda yalnızca son parça kalıyor. Bu yüzden her parçayı
+        // bitince biriktirip sonunda birleştiriyoruz.
+        request.shouldReportPartialResults = true
+        request.taskHint = .dictation
         if #available(iOS 16.0, *) {
             request.addsPunctuation = true
         }
 
         var finished = false
+        var committed: [String] = []
+        var current = ""
+        var currentSegments = 0
+
+        func commitCurrent() {
+            let t = current.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !t.isEmpty && committed.last != t {
+                committed.append(t)
+            }
+            current = ""
+            currentSegments = 0
+        }
+
+        func fullText() -> String {
+            var parts = committed
+            let tail = current.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !tail.isEmpty && parts.last != tail { parts.append(tail) }
+            return parts.joined(separator: " ")
+        }
+
         recognitionTask = recognizer.recognitionTask(with: request) { result, error in
             if finished { return }
+            if let result = result {
+                let text = result.bestTranscription.formattedString
+                let segments = result.bestTranscription.segments.count
+                // Sonuç birden çok kısaldıysa tanıyıcı yeni parçaya geçip öncekini silmiştir.
+                if currentSegments >= 3 && segments < currentSegments / 2 {
+                    commitCurrent()
+                }
+                if !text.isEmpty {
+                    current = text
+                    currentSegments = segments
+                }
+                // Metadata yalnızca bir konuşma parçası tamamlandığında gelir.
+                if result.speechRecognitionMetadata != nil {
+                    commitCurrent()
+                }
+                if result.isFinal {
+                    finished = true
+                    commitCurrent()
+                    call.resolve(["text": fullText()])
+                    return
+                }
+            }
             if let error = error {
                 finished = true
-                call.reject("Yazıya çevrilemedi: \(error.localizedDescription)", "transcribe_failed", error)
-                return
-            }
-            if let result = result, result.isFinal {
-                finished = true
-                call.resolve(["text": result.bestTranscription.formattedString])
+                // Kayıt sessizlikle bitince "konuşma algılanmadı" hatası gelebiliyor;
+                // o ana kadar biriken metin varsa onu kullan.
+                let text = fullText()
+                if !text.isEmpty {
+                    call.resolve(["text": text])
+                } else {
+                    call.reject("Yazıya çevrilemedi: \(error.localizedDescription)", "transcribe_failed", error)
+                }
             }
         }
     }
