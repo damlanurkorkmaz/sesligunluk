@@ -82,6 +82,8 @@ export function NotebookCover({
       <div className={`nb-hinge ${opening ? "nb-hinge--open" : ""}`}>
         <LeatherFace title={title} scale={scale} />
         <span className="nb-band" />
+        <span className="nb-corner nb-corner--top" aria-hidden="true" />
+        <span className="nb-corner nb-corner--bottom" aria-hidden="true" />
       </div>
       <div className="nb-rings" aria-hidden="true">
         {Array.from({ length: RINGS }, (_, i) => (
