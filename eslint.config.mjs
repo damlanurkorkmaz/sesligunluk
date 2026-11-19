@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Capacitor'ın iOS projesine kopyaladığı derlenmiş web çıktısı
+    "ios/**",
   ]),
 ]);
 

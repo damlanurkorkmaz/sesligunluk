@@ -7,10 +7,12 @@ import { processRecording, type Step } from "@/lib/pipeline";
 import { GunlukNative, type Mood } from "@/lib/native";
 import { MOODS } from "@/lib/moods";
 import { fromKey, longDate, formatClock } from "@/lib/dates";
+import { AudioPlayer } from "./AudioPlayer";
 
 export interface Pending {
   fileName: string;
   durationSec: number;
+  samples: number[];
 }
 
 const STEP_TEXT: Record<Step, string> = {
@@ -34,7 +36,7 @@ export function DetailScreen({ date, pending, onBack }: { date: string; pending:
     ran.current = true;
     (async () => {
       if (pending) {
-        const r = await processRecording(date, pending.fileName, pending.durationSec, setStep);
+        const r = await processRecording(date, pending.fileName, pending.durationSec, pending.samples, setStep);
         setEntry(r.entry);
         setNotice(r.notice);
         if (!r.entry.transcript) {
@@ -141,6 +143,8 @@ export function DetailScreen({ date, pending, onBack }: { date: string; pending:
               </div>
             )}
           </section>
+
+          <AudioPlayer fileName={entry.fileName} durationSec={entry.durationSec} waveform={entry.waveform ?? []} />
 
           {entry.summary && (
             <section className="card card--lilac col" style={{ gap: 8, padding: 18 }}>

@@ -26,6 +26,8 @@
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Günlüğünü yalnızca senin açabilmen için Face ID kullanılır.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Günlük kaydını sesinle tutabilmen için mikrofona erişim gerekiyor. Kayıtların telefonundan hiç çıkmaz.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>

@@ -38,6 +38,8 @@ Tarayıcıda kayıt, yazıya çevirme ve özet **sahtedir** (`src/lib/native.ts`
 | `isAIAvailable()` | Foundation Models hazır mı, Türkçe destekleniyor mu |
 | `summarize({ text })` | `@Generable DaySummary` → özet, ruh hali, en fazla 3 etiket |
 | `deleteAudio({ fileName })` | Ses dosyasını sil |
+| `getAudioPath({ fileName })` | Oynatma için tam yol (`Capacitor.convertFileSrc` ile kullanılır) |
+| `biometryType()` / `authenticate()` | Face ID / Touch ID, olmazsa cihaz şifresi |
 
 Eklenti `MainViewController.swift` içinde köprüye kaydedilir. Uygulama iOS 17+ çalışır; Foundation Models iOS 26+ ve Apple Intelligence destekli cihazlarda (iPhone 15 Pro ve sonrası) devreye girer, `-weak_framework FoundationModels` ile eski sürümlerde çökmez.
 
@@ -65,4 +67,8 @@ TestFlight build'ini iPhone 15 Pro veya sonrasında, sistem dili Türkçe iken d
 
 ## Henüz yok
 
-Ayarlar ekranı (hatırlatma saati, Face ID), ses oynatma, ay sonu kartı, Premium/RevenueCat, karanlık mod, SQLite + arama, iCloud yedeği.
+Ay sonu kartı, Premium/RevenueCat ve 7 gün sonra özet kilidi, karanlık mod, SQLite + arama, iCloud yedeği, uygulama ikonu ve adı.
+
+## Ekranlar
+
+Karşılama, Bugün, Kayıt, Kayıt detayı (ses oynatıcı dahil), Takvim, Ayarlar (hatırlatma saati, Face ID kilidi, metinleri dışa aktarma, tüm verileri silme, cihaz durumu), Kilit.

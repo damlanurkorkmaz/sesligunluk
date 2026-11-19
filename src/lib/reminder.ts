@@ -7,7 +7,7 @@ export async function scheduleDailyReminder(hour = 21, minute = 0): Promise<bool
   try {
     const perm = await LocalNotifications.requestPermissions();
     if (perm.display !== "granted") return false;
-    await LocalNotifications.cancel({ notifications: [{ id: REMINDER_ID }] });
+    await cancelReminder();
     await LocalNotifications.schedule({
       notifications: [
         {
@@ -21,5 +21,13 @@ export async function scheduleDailyReminder(hour = 21, minute = 0): Promise<bool
     return true;
   } catch {
     return false; // tarayıcıda veya izin yoksa sessizce geç
+  }
+}
+
+export async function cancelReminder(): Promise<void> {
+  try {
+    await LocalNotifications.cancel({ notifications: [{ id: REMINDER_ID }] });
+  } catch {
+    /* yok say */
   }
 }

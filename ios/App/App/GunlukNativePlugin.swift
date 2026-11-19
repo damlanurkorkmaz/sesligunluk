@@ -2,6 +2,7 @@ import Foundation
 import Capacitor
 import AVFoundation
 import Speech
+import LocalAuthentication
 #if canImport(FoundationModels)
 import FoundationModels
 #endif
@@ -23,6 +24,9 @@ public class GunlukNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioRecorderDel
         CAPPluginMethod(name: "isAIAvailable", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "summarize", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "deleteAudio", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getAudioPath", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "biometryType", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "authenticate", returnType: CAPPluginReturnPromise),
     ]
 
     private var recorder: AVAudioRecorder?
@@ -180,6 +184,58 @@ public class GunlukNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioRecorderDel
             call.resolve()
         } catch {
             call.reject("Silinemedi", "delete_failed", error)
+        }
+    }
+
+    /// Oynatma için dosyanın tam yolu. JS tarafı Capacitor.convertFileSrc ile WebView'e verir.
+    @objc func getAudioPath(_ call: CAPPluginCall) {
+        guard let name = call.getString("fileName") else {
+            call.reject("fileName gerekli", "bad_args")
+            return
+        }
+        do {
+            let url = try fileURL(name)
+            guard FileManager.default.fileExists(atPath: url.path) else {
+                call.reject("Dosya bulunamadı", "file_missing")
+                return
+            }
+            // Sessiz modda da kayıt duyulsun diye oynatma kategorisine geç.
+            try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio)
+            try? AVAudioSession.sharedInstance().setActive(true)
+            call.resolve(["path": url.path])
+        } catch {
+            call.reject("Dosya bulunamadı", "file_missing", error)
+        }
+    }
+
+    // MARK: - Face ID / Touch ID kilidi
+
+    @objc func biometryType(_ call: CAPPluginCall) {
+        let ctx = LAContext()
+        var err: NSError?
+        let can = ctx.canEvaluatePolicy(.deviceOwnerAuthentication, error: &err)
+        var type = "none"
+        switch ctx.biometryType {
+        case .faceID: type = "faceID"
+        case .touchID: type = "touchID"
+        default: type = can ? "passcode" : "none"
+        }
+        call.resolve(["type": type, "available": can])
+    }
+
+    /// Biyometri başarısız olursa cihaz şifresine düşer (deviceOwnerAuthentication).
+    @objc func authenticate(_ call: CAPPluginCall) {
+        let reason = call.getString("reason") ?? "Günlüğünü açmak için kimliğini doğrula"
+        let ctx = LAContext()
+        ctx.localizedCancelTitle = "Vazgeç"
+        ctx.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) { success, error in
+            DispatchQueue.main.async {
+                if success {
+                    call.resolve(["success": true])
+                } else {
+                    call.reject(error?.localizedDescription ?? "Doğrulanamadı", "auth_failed")
+                }
+            }
         }
     }
 

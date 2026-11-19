@@ -17,7 +17,7 @@ export function RecordScreen({
   onCancel,
 }: {
   prompt: string;
-  onDone: (fileName: string, durationSec: number) => void;
+  onDone: (fileName: string, durationSec: number, samples: number[]) => void;
   onCancel: () => void;
 }) {
   const [levels, setLevels] = useState<number[]>([]);
@@ -26,6 +26,7 @@ export function RecordScreen({
   const [finishing, setFinishing] = useState(false);
   const active = useRef(false);
   const finishingRef = useRef(false);
+  const samples = useRef<number[]>([]);
 
   const finish = useCallback(async () => {
     if (finishingRef.current) return;
@@ -42,7 +43,7 @@ export function RecordScreen({
         setFinishing(false);
         return;
       }
-      onDone(r.fileName, r.durationSec);
+      onDone(r.fileName, r.durationSec, samples.current);
     } catch {
       setError("Kayıt durdurulamadı.");
       finishingRef.current = false;
@@ -52,6 +53,7 @@ export function RecordScreen({
 
   const start = useCallback(async () => {
     setError(null);
+    samples.current = [];
     setLevels([]);
     setElapsed(0);
     try {
@@ -72,6 +74,7 @@ export function RecordScreen({
       const r = await GunlukNative.getLevel().catch(() => null);
       if (!r || !active.current) return;
       setElapsed(r.elapsed);
+      samples.current.push(r.level);
       setLevels((prev) => [...prev.slice(-(BARS - 1)), r.level]);
       if (!r.isRecording) void finish(); // süre doldu
     }, 100);

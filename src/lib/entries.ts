@@ -11,6 +11,7 @@ export interface Entry {
   mood: Mood | null;
   tags: string[];
   aiGenerated: boolean;
+  waveform?: number[]; // oynatıcıda gösterilen 0..1 seviyeler (kayıt sırasında örneklenir)
   createdAt: string;
   updatedAt: string;
 }
@@ -71,4 +72,11 @@ export function currentStreak(entries: Entry[], today: Date = new Date()): numbe
     cursor = addDays(cursor, -1);
   }
   return n;
+}
+
+/** Tüm kayıtları siler; ses dosyalarını silmek çağıranın işi (fileName listesi döner). */
+export async function deleteAllEntries(): Promise<string[]> {
+  const all = await readAll();
+  await Preferences.remove({ key: KEY });
+  return Object.values(all).map((e) => e.fileName);
 }

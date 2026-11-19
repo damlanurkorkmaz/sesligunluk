@@ -14,6 +14,9 @@ export interface GunlukNativePlugin {
   isAIAvailable(): Promise<{ available: boolean; reason: string }>;
   summarize(opts: { text: string }): Promise<{ summary: string; mood: Mood; tags: string[] }>;
   deleteAudio(opts: { fileName: string }): Promise<void>;
+  getAudioPath(opts: { fileName: string }): Promise<{ path: string }>;
+  biometryType(): Promise<{ type: "faceID" | "touchID" | "passcode" | "none"; available: boolean }>;
+  authenticate(opts: { reason?: string }): Promise<{ success: boolean }>;
 }
 
 /**
@@ -73,6 +76,17 @@ class GunlukNativeWeb extends WebPlugin {
     };
   }
   async deleteAudio() {}
+  async getAudioPath(): Promise<{ path: string }> {
+    // Tarayıcıda gerçek ses dosyası yok; oynatıcı devre dışı görünür.
+    return { path: "" };
+  }
+  async biometryType() {
+    return { type: "faceID" as const, available: true };
+  }
+  async authenticate() {
+    await new Promise((r) => setTimeout(r, 900)); // Face ID'nin süresini taklit et
+    return { success: true };
+  }
 }
 
 export const GunlukNative = registerPlugin<GunlukNativePlugin>("GunlukNative", {

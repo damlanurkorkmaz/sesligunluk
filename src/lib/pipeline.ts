@@ -9,6 +9,21 @@ export interface ProcessResult {
   notice: string | null;
 }
 
+export const WAVE_BARS = 48;
+
+/** Kayıt boyunca alınan seviyeleri sabit sayıda çubuğa indirger (her dilimin tepe değeri). */
+export function downsample(samples: number[], bars: number): number[] {
+  if (samples.length === 0) return [];
+  const out: number[] = [];
+  for (let i = 0; i < bars; i++) {
+    const a = Math.floor((i * samples.length) / bars);
+    const b = Math.max(a + 1, Math.floor(((i + 1) * samples.length) / bars));
+    const slice = samples.slice(a, b);
+    out.push(Math.round(Math.max(...slice) * 100) / 100);
+  }
+  return out;
+}
+
 const TRANSCRIBE_HELP: Record<string, string> = {
   on_device_unavailable:
     "Bu cihazda Türkçe cihaz içi konuşma tanıma etkin değil. Ayarlar > Genel > Klavye'den Türkçe klavye ekleyip Dikte'yi açmak genelde çözer. Sesin kaydedildi; metni elle yazabilirsin.",
@@ -20,6 +35,7 @@ export async function processRecording(
   date: string,
   fileName: string,
   durationSec: number,
+  samples: number[],
   onStep: (s: Step) => void,
 ): Promise<ProcessResult> {
   let transcript = "";
@@ -66,6 +82,7 @@ export async function processRecording(
     mood,
     tags,
     aiGenerated,
+    waveform: downsample(samples, WAVE_BARS),
     createdAt: previous?.createdAt ?? now,
     updatedAt: now,
   });
