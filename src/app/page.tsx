@@ -6,7 +6,8 @@ import { OnboardingScreen } from "@/components/OnboardingScreen";
 import { TodayScreen, PROMPTS } from "@/components/TodayScreen";
 import { RecordScreen } from "@/components/RecordScreen";
 import { DetailScreen, type Pending } from "@/components/DetailScreen";
-import { CalendarScreen } from "@/components/CalendarScreen";
+import { JournalScreen } from "@/components/JournalScreen";
+import type { Tab } from "@/components/TabBar";
 import { SettingsScreen } from "@/components/SettingsScreen";
 import { LockScreen } from "@/components/LockScreen";
 import { App as CapApp } from "@capacitor/app";
@@ -17,15 +18,16 @@ import { dayKey } from "@/lib/dates";
 type Route =
   | { name: "loading" }
   | { name: "onboarding" }
-  | { name: "today" | "calendar" | "settings" }
+  | { name: "today" | "settings" }
+  | { name: "journal"; date?: string }
   | { name: "record" }
-  | { name: "detail"; date: string; pending: Pending | null; from: "today" | "calendar" };
+  | { name: "detail"; date: string; pending: Pending | null; from: "today" | "journal" };
 
 const ONBOARDED_KEY = "onboarded.v1";
 
 /**
  * Tek sayfalık uygulama: Capacitor içinde sayfa yenilemeden ekranlar arasında geçiş.
- * Ekranlar: Karşılama → Bugün ⇄ Takvim, Bugün → Kayıt → Detay.
+ * Ekranlar: Karşılama → Bugün ⇄ Günlüğüm ⇄ Ayarlar; Bugün → Kayıt → Detay; Günlüğüm → Detay (düzenleme).
  */
 export default function App() {
   const [route, setRoute] = useState<Route>({ name: "loading" });
@@ -55,6 +57,7 @@ export default function App() {
   }, []);
 
   const prompt = PROMPTS[new Date().getDate() % PROMPTS.length];
+  const goTab = (t: Tab) => setRoute(t === "journal" ? { name: "journal" } : { name: t });
 
   if (locked && route.name !== "loading") return <LockScreen onUnlock={() => setLocked(false)} />;
 
@@ -77,13 +80,22 @@ export default function App() {
           entries={entries}
           onRecord={() => setRoute({ name: "record" })}
           onOpen={(date) => setRoute({ name: "detail", date, pending: null, from: "today" })}
-          onTab={(t) => setRoute({ name: t })}
+          onTab={goTab}
         />
       );
-    case "calendar":
-      return <CalendarScreen entries={entries} onOpen={(date) => setRoute({ name: "detail", date, pending: null, from: "calendar" })} onTab={(t) => setRoute({ name: t })} />;
+    case "journal":
+      return (
+        <JournalScreen
+          key={route.date ?? "latest"}
+          entries={entries}
+          initialDate={route.date}
+          onEdit={(date) => setRoute({ name: "detail", date, pending: null, from: "journal" })}
+          onRecord={() => setRoute({ name: "record" })}
+          onTab={goTab}
+        />
+      );
     case "settings":
-      return <SettingsScreen entries={entries} onTab={(t) => setRoute({ name: t })} onDataCleared={refresh} />;
+      return <SettingsScreen entries={entries} onTab={goTab} onDataCleared={refresh} />;
     case "record":
       return (
         <RecordScreen
@@ -100,7 +112,7 @@ export default function App() {
           pending={route.pending}
           onBack={async () => {
             await refresh();
-            setRoute({ name: route.from });
+            setRoute(route.from === "journal" ? { name: "journal", date: route.date } : { name: "today" });
           }}
         />
       );

@@ -79,3 +79,14 @@ export const FaceIdIcon = ({ size = 44, color = "currentColor" }: P) => (
     <path d="M9 9v1M15 9v1M12 9v4h-1M9 16c1.5 1.2 4.5 1.2 6 0" />
   </svg>
 );
+export const BookIcon = ({ size = 24 }: P) => (
+  <svg {...base(size)} stroke="currentColor">
+    <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5z" />
+    <path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z" />
+  </svg>
+);
+export const ChevronDownIcon = ({ size = 16, color = "currentColor" }: P) => (
+  <svg {...base(size)} stroke={color} strokeWidth={2.4}>
+    <path d="M6 9l6 6 6-6" />
+  </svg>
+);

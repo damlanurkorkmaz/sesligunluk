@@ -1,10 +1,10 @@
-import { CalendarIcon, GearIcon, SunIcon } from "./Icons";
+import { BookIcon, GearIcon, SunIcon } from "./Icons";
 
-export type Tab = "today" | "calendar" | "settings";
+export type Tab = "today" | "journal" | "settings";
 
 const TABS: { id: Tab; label: string; Icon: () => React.ReactElement }[] = [
   { id: "today", label: "Bugün", Icon: () => <SunIcon /> },
-  { id: "calendar", label: "Takvim", Icon: () => <CalendarIcon /> },
+  { id: "journal", label: "Günlüğüm", Icon: () => <BookIcon /> },
   { id: "settings", label: "Ayarlar", Icon: () => <GearIcon /> },
 ];
 

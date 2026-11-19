@@ -22,7 +22,7 @@ const PauseIcon = () => (
 /** Eski kayıtlarda dalga verisi yoksa sabit, sakin bir desen göster. */
 const FALLBACK = Array.from({ length: WAVE_BARS }, (_, i) => 0.25 + 0.2 * Math.abs(Math.sin(i * 0.7)));
 
-export function AudioPlayer({ fileName, durationSec, waveform }: { fileName: string; durationSec: number; waveform: number[] }) {
+export function AudioPlayer({ fileName, durationSec, waveform, compact = false }: { fileName: string; durationSec: number; waveform: number[]; compact?: boolean }) {
   const audio = useRef<HTMLAudioElement | null>(null);
   const [src, setSrc] = useState<string | null>(null);
   const [unavailable, setUnavailable] = useState(false);
@@ -67,6 +67,40 @@ export function AudioPlayer({ fileName, durationSec, waveform }: { fileName: str
   const total = durationSec || 1;
   const progress = Math.min(1, position / total);
 
+  const audioEl = src && (
+    <audio
+      ref={audio}
+      src={src}
+      preload="metadata"
+      onPlay={() => setPlaying(true)}
+      onPause={() => setPlaying(false)}
+      onEnded={() => {
+        setPlaying(false);
+        setPosition(0);
+      }}
+      onTimeUpdate={(e) => setPosition(e.currentTarget.currentTime)}
+    />
+  );
+
+  if (compact) {
+    return (
+      <span className="row" style={{ gap: 8 }}>
+        <span className="small muted" style={{ fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
+          {unavailable ? "" : formatClock(playing || position > 0 ? position : durationSec)}
+        </span>
+        <button
+          onClick={toggle}
+          disabled={!src}
+          aria-label={playing ? "Duraklat" : "Bu günün kaydını dinle"}
+          style={{ width: 40, height: 40, borderRadius: "50%", border: 0, background: "var(--coral)", color: "var(--aubergine)", display: "flex", alignItems: "center", justifyContent: "center" }}
+        >
+          {playing ? <PauseIcon /> : <PlayIcon />}
+        </button>
+        {audioEl}
+      </span>
+    );
+  }
+
   return (
     <div className="card row" style={{ gap: 12, padding: "12px 14px" }}>
       <button
@@ -100,20 +134,7 @@ export function AudioPlayer({ fileName, durationSec, waveform }: { fileName: str
         {unavailable ? "—" : formatClock(playing || position > 0 ? position : durationSec)}
       </span>
 
-      {src && (
-        <audio
-          ref={audio}
-          src={src}
-          preload="metadata"
-          onPlay={() => setPlaying(true)}
-          onPause={() => setPlaying(false)}
-          onEnded={() => {
-            setPlaying(false);
-            setPosition(0);
-          }}
-          onTimeUpdate={(e) => setPosition(e.currentTarget.currentTime)}
-        />
-      )}
+      {audioEl}
     </div>
   );
 }

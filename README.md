@@ -13,7 +13,7 @@ Günde 60 saniyelik, Türkçe, tamamen cihazda çalışan sesli günlük. Ses ka
 | Yerel eklenti | `ios/App/App/GunlukNativePlugin.swift` (kayıt, yazıya çevirme, özet) |
 | Saklama | `@capacitor/preferences` (JSON); ileride SQLite |
 | Derleme | Codemagic → TestFlight (`codemagic.yaml`) |
-| Font | Plus Jakarta Sans (yerel, `@fontsource-variable`) |
+| Font | Plus Jakarta Sans (arayüz), Lora (defter yazısı); ikisi de yerel, `@fontsource-variable` |
 
 ## Geliştirme
 
@@ -71,4 +71,4 @@ Ay sonu kartı, Premium/RevenueCat ve 7 gün sonra özet kilidi, karanlık mod, 
 
 ## Ekranlar
 
-Karşılama, Bugün, Kayıt, Kayıt detayı (ses oynatıcı dahil), Takvim, Ayarlar (hatırlatma saati, Face ID kilidi, metinleri dışa aktarma, tüm verileri silme, cihaz durumu), Kilit.
+Karşılama, Bugün, Kayıt, Kayıt detayı (ses oynatıcı dahil), Günlüğüm (defter görünümü: tarih şeridi, kaydırarak sayfa çevirme, ay seçici), Ayarlar (hatırlatma saati, Face ID kilidi, metinleri dışa aktarma, tüm verileri silme, cihaz durumu), Kilit.
