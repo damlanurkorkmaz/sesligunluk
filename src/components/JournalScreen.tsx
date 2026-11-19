@@ -2,14 +2,16 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TabBar, type Tab } from "./TabBar";
-import { BackIcon, ChevronDownIcon, CloseIcon, NextIcon, PencilIcon } from "./Icons";
+import { BackIcon, CalendarIcon, CloseIcon, MicIcon, NextIcon, PencilIcon } from "./Icons";
 import { MonthGrid } from "./MonthGrid";
 import { AudioPlayer } from "./AudioPlayer";
-import { NotebookCover } from "./NotebookCover";
+import { LeatherFace, NotebookCover } from "./NotebookCover";
+import { MoodStrip, Shelf, groupVolumes } from "./Shelf";
 import { journalTitle } from "@/lib/turkish";
 import type { Entry } from "@/lib/entries";
 import { moodInfo } from "@/lib/moods";
 import { MONTHS, dayKey, fromKey, shortWeekday } from "@/lib/dates";
+import { MAX_RECORD_SECONDS } from "@/app.config";
 
 /** Mühür mürekkebi: ruh hali renginin kâğıtta okunur (4.5:1) koyu tonu. */
 export const STAMP_INK: Record<string, string> = {
@@ -72,7 +74,64 @@ function Page({ entry, prev, pageNo }: { entry: Entry; prev: Entry | null; pageN
   );
 }
 
+/** Kapağın iç yüzü: ex-libris etiketi gibi defterin künyesi. */
+function CoverInside({ name, year, month, entries }: { name: string; year: number; month: number; entries: Entry[] }) {
+  const first = entries[0] ? fromKey(entries[0].date) : null;
+  return (
+    <article className="paper paper--endpaper" aria-label="Defterin kapağının iç yüzü">
+      <div className="exlibris">
+        <span className="exlibris-kicker">Bu defter</span>
+        <strong className="exlibris-name">{journalTitle(name)}</strong>
+        <span className="exlibris-rule" aria-hidden="true" />
+        <span className="exlibris-month">
+          {MONTHS[month]} {year}
+        </span>
+        <span className="exlibris-meta">
+          {first ? `${first.getDate()} ${MONTHS[first.getMonth()]}'da başladı · ${entries.length} sayfa` : "Henüz boş"}
+        </span>
+        <MoodStrip entries={entries} />
+      </div>
+      <span className="endpaper-hint" aria-hidden="true">
+        sayfaları çevir →
+      </span>
+    </article>
+  );
+}
+
+/** Bugünün henüz yazılmamış sayfası (yalnızca bu ayın defterinin sonunda). */
+function TodayBlank({ onRecord }: { onRecord: () => void }) {
+  const d = new Date();
+  return (
+    <article className="paper" aria-label="Bugünün boş sayfası">
+      <div className="paper-scroll today-blank-page">
+        <header className="paper-head">
+          <div className="col" style={{ gap: 0 }}>
+            <h2 className="paper-date">
+              {d.getDate()} {MONTHS[d.getMonth()]}
+            </h2>
+            <span className="paper-weekday">
+              {WEEKDAYS_LONG[d.getDay()]}, {d.getFullYear()}
+            </span>
+          </div>
+        </header>
+        <div className="today-blank-lines" aria-hidden="true" />
+        <div className="today-blank-cta">
+          <span className="paper-weekday">Bu sayfa henüz boş.</span>
+          <button className="today-rec-btn" style={{ width: 64, height: 64 }} onClick={onRecord} aria-label="Bugünü kaydet">
+            <MicIcon size={30} />
+          </button>
+          <span className="today-rec-label" style={{ marginTop: 0 }}>
+            Bugünü anlat <span>· {MAX_RECORD_SECONDS} sn</span>
+          </span>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 const SPIRAL_RINGS = 14;
+
+type Item = { kind: "cover" } | { kind: "entry"; entry: Entry; n: number } | { kind: "today" };
 
 export function JournalScreen({
   entries,
@@ -89,20 +148,129 @@ export function JournalScreen({
   onRecord: () => void;
   onTab: (t: Tab) => void;
 }) {
-  // Defter eskiden yeniye dizilir; açılışta son sayfa (en yeni) görünür.
-  const pages = useMemo(() => [...entries].sort((a, b) => a.date.localeCompare(b.date)), [entries]);
+  const volumes = useMemo(() => groupVolumes(entries), [entries]);
+  // Sekmeden gelince raf; bir sayfadan geri dönünce doğrudan o ayın defteri.
+  const [volumeKey, setVolumeKey] = useState<string | null>(initialDate ? initialDate.slice(0, 7) : null);
+  const [openedFromShelf, setOpenedFromShelf] = useState(false);
+
+  if (entries.length === 0) {
+    return (
+      <main className="screen">
+        <header className="pad">
+          <h1 className="title">Günlüğüm</h1>
+        </header>
+        <div className="grow col pad" style={{ alignItems: "center", justifyContent: "center", gap: 16, textAlign: "center" }}>
+          <div className="journal-empty-book" aria-hidden="true">
+            <NotebookCover title={journalTitle(name)} width={200} height={268} />
+          </div>
+          <strong style={{ fontSize: 20, fontWeight: 800 }}>Defterin seni bekliyor</strong>
+          <span className="muted" style={{ maxWidth: 280 }}>
+            İlk kaydını yaptığında burada bir defter sayfası olarak görünecek.
+          </span>
+          <button className="btn btn--primary" style={{ maxWidth: 260 }} onClick={onRecord}>
+            İlk kaydını yap
+          </button>
+        </div>
+        <TabBar active="journal" onChange={onTab} />
+      </main>
+    );
+  }
+
+  const volume = volumeKey ? volumes.find((v) => v.key === volumeKey) : null;
+
+  if (!volume) {
+    return (
+      <main className="screen">
+        <header className="pad">
+          <h1 className="title">Günlüğüm</h1>
+        </header>
+        <Shelf
+          volumes={volumes}
+          onOpen={(k) => {
+            setOpenedFromShelf(true);
+            setVolumeKey(k);
+          }}
+        />
+        <TabBar active="journal" onChange={onTab} />
+      </main>
+    );
+  }
+
+  return (
+    <VolumeView
+      key={volume.key}
+      volume={volume}
+      allEntries={entries}
+      name={name}
+      initialDate={initialDate}
+      animateOpen={openedFromShelf}
+      onShelf={() => setVolumeKey(null)}
+      onJump={(date) => {
+        setOpenedFromShelf(false);
+        setVolumeKey(date.slice(0, 7));
+      }}
+      onEdit={onEdit}
+      onRecord={onRecord}
+      onTab={onTab}
+    />
+  );
+}
+
+function VolumeView({
+  volume,
+  allEntries,
+  name,
+  initialDate,
+  animateOpen,
+  onShelf,
+  onJump,
+  onEdit,
+  onRecord,
+  onTab,
+}: {
+  volume: ReturnType<typeof groupVolumes>[number];
+  allEntries: Entry[];
+  name: string;
+  initialDate?: string;
+  animateOpen: boolean;
+  onShelf: () => void;
+  onJump: (date: string) => void;
+  onEdit: (date: string) => void;
+  onRecord: () => void;
+  onTab: (t: Tab) => void;
+}) {
+  const todayKey = dayKey();
+  const isCurrent = todayKey.startsWith(volume.key);
+  // Defter: kapağın iç yüzü, eskiden yeniye sayfalar, bu aysa sonunda bugünün boş sayfası.
+  const pages = useMemo<Item[]>(() => {
+    const list: Item[] = [{ kind: "cover" }, ...volume.entries.map((entry, i) => ({ kind: "entry" as const, entry, n: i + 1 }))];
+    if (isCurrent && !volume.entries.some((e) => e.date === todayKey)) list.push({ kind: "today" });
+    return list;
+  }, [volume, isCurrent, todayKey]);
+  const entryAt = (i: number) => {
+    const it = pages[i];
+    return it && it.kind === "entry" ? it.entry : null;
+  };
   const [idx, setIdx] = useState(() => {
-    const i = initialDate ? pages.findIndex((p) => p.date === initialDate) : -1;
-    return i >= 0 ? i : Math.max(0, pages.length - 1);
+    const i = initialDate ? pages.findIndex((p) => p.kind === "entry" && p.entry.date === initialDate) : -1;
+    if (i >= 0) return i;
+    // Açılışta en yeni yazılı sayfa (yoksa kapak)
+    let last = 0;
+    pages.forEach((p, j) => p.kind === "entry" && (last = j));
+    return last;
   });
+  const [opening, setOpening] = useState(animateOpen);
   const [dx, setDx] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [mode, setMode] = useState<Mode>(null);
   const [sheet, setSheet] = useState(false);
-  const [cursor, setCursor] = useState(() => {
-    const d = pages[idx] ? fromKey(pages[idx].date) : new Date();
-    return new Date(d.getFullYear(), d.getMonth(), 1);
-  });
+  const [cursor, setCursor] = useState(() => new Date(volume.year, volume.month, 1));
+
+  useEffect(() => {
+    if (!opening) return;
+    const t = setTimeout(() => setOpening(false), 1300);
+    return () => clearTimeout(t);
+  }, [opening]);
 
   const stage = useRef<HTMLDivElement>(null);
   const strip = useRef<HTMLDivElement>(null);
@@ -122,7 +290,7 @@ export function JournalScreen({
     reduceMotion.current = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
   }, []);
 
-  const current = pages[idx] ?? null;
+  const current = entryAt(idx);
 
   // Tarih şeridinde seçili günü ortala.
   useEffect(() => {
@@ -216,55 +384,49 @@ export function JournalScreen({
   const shade = turning ? Math.min(0.35, (Math.abs(angle) / MAX_ANGLE) * 0.35) : 0;
 
   // ---- tarih şeridi: seçili sayfanın ayındaki günler ----
-  const stripMonth = current ? fromKey(current.date) : new Date();
-  const sy = stripMonth.getFullYear();
-  const sm = stripMonth.getMonth();
-  const todayKey = dayKey();
-  const byDate = new Map(pages.map((p, i) => [p.date, i]));
+  const sy = volume.year;
+  const sm = volume.month;
+  const byDate = new Map<string, number>();
+  pages.forEach((p, i) => p.kind === "entry" && byDate.set(p.entry.date, i));
   const stripDays = Array.from({ length: new Date(sy, sm + 1, 0).getDate() }, (_, i) => new Date(sy, sm, i + 1)).filter((d) => dayKey(d) <= todayKey);
 
-  if (pages.length === 0) {
-    return (
-      <main className="screen">
-        <header className="pad">
-          <h1 className="title">Günlüğüm</h1>
-        </header>
-        <div className="grow col pad" style={{ alignItems: "center", justifyContent: "center", gap: 16, textAlign: "center" }}>
-          <div className="journal-empty-book" aria-hidden="true">
-            <NotebookCover title={journalTitle(name)} width={200} height={268} />
-          </div>
-          <strong style={{ fontSize: 20, fontWeight: 800 }}>Defterin seni bekliyor</strong>
-          <span className="muted" style={{ maxWidth: 280 }}>
-            İlk kaydını yaptığında burada bir defter sayfası olarak görünecek.
-          </span>
-          <button className="btn btn--primary" style={{ maxWidth: 260 }} onClick={onRecord}>
-            İlk kaydını yap
-          </button>
-        </div>
-        <TabBar active="journal" onChange={onTab} />
-      </main>
-    );
+  function renderItem(i: number) {
+    const it = pages[i];
+    if (!it) return null;
+    if (it.kind === "cover") return <CoverInside name={name} year={sy} month={sm} entries={volume.entries} />;
+    if (it.kind === "today") return <TodayBlank onRecord={onRecord} />;
+    const prev = i > 0 ? entryAt(i - 1) : null;
+    return <Page entry={it.entry} prev={prev} pageNo={it.n} />;
   }
+
+  const it = pages[idx];
+  const pageLabel = !it ? "" : it.kind === "cover" ? "Kapak" : it.kind === "today" ? "Bugün" : `${it.n} / ${volume.entries.length}`;
 
   return (
     <main className="screen" style={{ height: "100dvh", overflow: "hidden" }}>
-      <header className="pad row between">
-        <h1 className="title">Günlüğüm</h1>
+      <header className="pad row between vol-head">
+        <span className="row" style={{ gap: 6, minWidth: 0 }}>
+          <button className="icon-btn" onClick={onShelf} aria-label="Rafa dön" disabled={!!mode}>
+            <BackIcon />
+          </button>
+          <h1 className="title vol-title">
+            {MONTHS[sm]} <span>{sy}</span>
+          </h1>
+        </span>
         <span className="row" style={{ gap: 8 }}>
-          <button className="icon-btn" onClick={() => current && onEdit(current.date)} aria-label="Bu sayfayı düzenle" disabled={!!mode}>
+          <button className="icon-btn" onClick={() => current && onEdit(current.date)} aria-label="Bu sayfayı düzenle" disabled={!!mode || !current}>
             <PencilIcon />
           </button>
           <button
-          className="pill"
-          style={{ fontSize: 14 }}
-          onClick={() => {
-            setCursor(new Date(sy, sm, 1));
-            setSheet(true);
-          }}
-          aria-haspopup="dialog"
-        >
-          {MONTHS[sm]} {sy}
-          <ChevronDownIcon />
+            className="icon-btn"
+            onClick={() => {
+              setCursor(new Date(sy, sm, 1));
+              setSheet(true);
+            }}
+            aria-haspopup="dialog"
+            aria-label="Tarihe git"
+          >
+            <CalendarIcon />
           </button>
         </span>
       </header>
@@ -273,7 +435,7 @@ export function JournalScreen({
         {stripDays.map((d) => {
           const key = dayKey(d);
           const i = byDate.get(key);
-          const e = i !== undefined ? pages[i] : null;
+          const e = i !== undefined ? entryAt(i) : null;
           const m = moodInfo(e?.mood);
           const sel = i === idx;
           return (
@@ -306,11 +468,11 @@ export function JournalScreen({
         <span className="book-ribbon" aria-hidden="true" />
         {/* Alttaki sayfa */}
         <div className="book-page" style={{ transform: `translateX(${resist}px)`, transition: dragging ? "none" : "transform 300ms ease" }}>
-          <Page entry={pages[underIndex]} prev={pages[underIndex - 1] ?? null} pageNo={underIndex + 1} />
+          {renderItem(underIndex)}
         </div>
 
         {/* Dönen sayfa */}
-        {turning && pages[topIndex] && (
+        {turning && pages[topIndex] !== undefined && (
           <div
             className="book-page book-page--turning"
             style={{
@@ -318,8 +480,15 @@ export function JournalScreen({
               transition: (dragging && !mode) || mode?.target === "start" ? "none" : `transform ${TURN_MS}ms cubic-bezier(.2,.7,.2,1)`,
             }}
           >
-            <Page entry={pages[topIndex]} prev={pages[topIndex - 1] ?? null} pageNo={topIndex + 1} />
+            {renderItem(topIndex)}
             <div className="book-shade" style={{ opacity: shade }} aria-hidden="true" />
+          </div>
+        )}
+
+        {/* Raftan açılınca kapak omurgadan dönerek açılır */}
+        {opening && (
+          <div className="vol-opener" aria-hidden="true">
+            <LeatherFace title={`${MONTHS[sm]} ${sy}`} scale={1.1} />
           </div>
         )}
 
@@ -336,7 +505,7 @@ export function JournalScreen({
           <BackIcon />
         </button>
         <span className="small muted" style={{ fontWeight: 600 }} aria-live="polite">
-          {idx + 1} / {pages.length}
+          {pageLabel}
         </span>
         <button className="icon-btn" onClick={() => goTo(idx + 1)} disabled={idx === pages.length - 1} aria-label="Sonraki sayfa">
           <NextIcon />
@@ -355,14 +524,15 @@ export function JournalScreen({
               </button>
             </div>
             <MonthGrid
-              entries={entries}
+              entries={allEntries}
               cursor={cursor}
               onCursor={setCursor}
               selected={current?.date}
               onPick={(date) => {
+                setSheet(false);
                 const i = byDate.get(date);
                 if (i !== undefined) setIdx(i);
-                setSheet(false);
+                else onJump(date); // başka ayın defteri
               }}
             />
           </div>
