@@ -1,6 +1,6 @@
 # Codemagic: iOS derlemesi ve TestFlight'a yükleme.
 # Kurulum (bir kez): Codemagic > Teams > Integrations > App Store Connect API anahtarını "GunNotuASC" adıyla ekle,
-# App Store Connect'te com.damlanur.sesligunluk Bundle ID'si ile uygulamayı oluştur ve aşağıdaki APP_STORE_APPLE_ID'yi doldur.
+# App Store Connect'te com.damlanur.sesligunluk Bundle ID'si ile uygulama oluşturuldu (Apple ID: 6836697250).
 workflows:
   ios-testflight:
     name: iOS → TestFlight
@@ -15,7 +15,7 @@ workflows:
       vars:
         XCODE_PROJECT: ios/App/App.xcodeproj
         XCODE_SCHEME: App
-        APP_STORE_APPLE_ID: 0000000000 # App Store Connect > Uygulama > Genel Bilgiler > Apple ID
+        APP_STORE_APPLE_ID: 6836697250 # App Store Connect > Uygulama > Genel Bilgiler > Apple ID
       node: 22
       xcode: latest # Foundation Models için iOS 26 SDK (Xcode 26+) gerekir
     triggering:
