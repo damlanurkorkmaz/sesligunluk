@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "@fontsource-variable/plus-jakarta-sans";
 import "@fontsource-variable/lora";
-import "@fontsource-variable/caveat";
 import "./globals.css";
 import { APP_NAME } from "@/app.config";
 

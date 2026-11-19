@@ -751,23 +751,27 @@ button:disabled {
 }
 
 .paper-gap {
-  font-family: "Caveat Variable", cursive;
-  font-size: 18px;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 14px;
   color: var(--muted);
+  margin-bottom: 2px;
 }
 
 .paper-date {
   margin: 0;
-  font-family: "Caveat Variable", cursive;
-  font-size: 40px;
-  font-weight: 700;
-  line-height: 1;
+  font-family: var(--font-serif);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
   color: var(--aubergine);
 }
 
 .paper-weekday {
-  font-family: "Caveat Variable", cursive;
-  font-size: 20px;
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--muted);
 }
 
@@ -789,39 +793,11 @@ button:disabled {
 }
 
 .paper-tags {
-  margin-top: 6px;
-  font-family: "Caveat Variable", cursive;
-  font-size: 20px;
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--muted);
   white-space: pre-wrap;
-}
-
-/* Bantla yapıştırılmış özet notu */
-.paper-note {
-  position: relative;
-  margin: 22px 6px 4px 0;
-  padding: 16px 14px 12px;
-  border-radius: 2px;
-  background: var(--lilac-tint);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 14px;
-  line-height: 1.5;
-  font-weight: 600;
-  transform: rotate(-1.2deg);
-  box-shadow: 0 2px 6px rgba(56, 42, 57, 0.12);
-}
-
-.paper-tape {
-  position: absolute;
-  top: -10px;
-  left: 50%;
-  width: 74px;
-  height: 20px;
-  transform: translateX(-50%) rotate(2.5deg);
-  background: rgba(154, 165, 140, 0.5);
-  box-shadow: 0 1px 1px rgba(56, 42, 57, 0.08);
 }
 
 /* Çizgili satırlar sayfanın sonuna kadar uzanır */
@@ -854,8 +830,9 @@ button:disabled {
 }
 
 .paper-pageno {
-  font-family: "Caveat Variable", cursive;
-  font-size: 18px;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 14px;
   color: var(--muted);
 }
 

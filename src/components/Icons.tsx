@@ -79,14 +79,24 @@ export const FaceIdIcon = ({ size = 44, color = "currentColor" }: P) => (
     <path d="M9 9v1M15 9v1M12 9v4h-1M9 16c1.5 1.2 4.5 1.2 6 0" />
   </svg>
 );
+/** Günlüğüm: spiralli defter, üstünde dalgalı yazı satırları. */
 export const BookIcon = ({ size = 24 }: P) => (
   <svg {...base(size)} stroke="currentColor">
-    <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5z" />
-    <path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z" />
+    <rect x="5.5" y="3" width="14" height="18" rx="2" />
+    <path d="M3.5 7h3.5M3.5 12h3.5M3.5 17h3.5" />
+    <path d="M9.5 8.5q1.1-1 2.2 0t2.2 0t2.2 0" strokeWidth={1.7} />
+    <path d="M9.5 12.5q1.1-1 2.2 0t2.2 0t2.2 0" strokeWidth={1.7} />
+    <path d="M9.5 16.5q1.1-1 2.2 0t2.2 0" strokeWidth={1.7} />
   </svg>
 );
 export const ChevronDownIcon = ({ size = 16, color = "currentColor" }: P) => (
   <svg {...base(size)} stroke={color} strokeWidth={2.4}>
     <path d="M6 9l6 6 6-6" />
+  </svg>
+);
+export const PencilIcon = ({ size = 20, color = "currentColor" }: P) => (
+  <svg {...base(size)} stroke={color}>
+    <path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z" />
+    <path d="M14 8l3 3" />
   </svg>
 );

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TabBar, type Tab } from "./TabBar";
-import { BackIcon, ChevronDownIcon, CloseIcon, NextIcon } from "./Icons";
+import { BackIcon, ChevronDownIcon, CloseIcon, NextIcon, PencilIcon } from "./Icons";
 import { MonthGrid } from "./MonthGrid";
 import { AudioPlayer } from "./AudioPlayer";
 import type { Entry } from "@/lib/entries";
@@ -29,7 +29,7 @@ function daysBetween(a: string, b: string) {
 }
 
 /** Tek bir defter sayfası. */
-function Page({ entry, prev, pageNo, onEdit }: { entry: Entry; prev: Entry | null; pageNo: number; onEdit: () => void }) {
+function Page({ entry, prev, pageNo }: { entry: Entry; prev: Entry | null; pageNo: number }) {
   const d = fromKey(entry.date);
   const m = moodInfo(entry.mood);
   const gap = prev ? daysBetween(prev.date, entry.date) : 0;
@@ -57,26 +57,13 @@ function Page({ entry, prev, pageNo, onEdit }: { entry: Entry; prev: Entry | nul
 
         {entry.tags.length > 0 && <div className="paper-tags">{entry.tags.map((t) => `#${t.replace(/\s+/g, "")}`).join("  ")}</div>}
 
-        {entry.summary && (
-          <aside className="paper-note">
-            <span className="paper-tape" aria-hidden="true" />
-            <span className="eyebrow" style={{ color: "var(--aubergine)" }}>Özet</span>
-            <span>{entry.summary}</span>
-          </aside>
-        )}
-
         <div className="paper-text">
           {paragraphs.length > 0 ? paragraphs.map((p, i) => <p key={i}>{p}</p>) : <p className="muted">Bu sayfada henüz yazı yok.</p>}
         </div>
 
         <footer className="paper-foot">
-          <span className="row" style={{ gap: 12 }}>
-            <AudioPlayer compact fileName={entry.fileName} durationSec={entry.durationSec} waveform={entry.waveform ?? []} />
-            <button className="link-btn" style={{ padding: "10px 0" }} onClick={onEdit}>
-              Düzenle
-            </button>
-          </span>
-          <span className="paper-pageno">— {pageNo} —</span>
+          <AudioPlayer compact fileName={entry.fileName} durationSec={entry.durationSec} waveform={entry.waveform ?? []} />
+          <span className="paper-pageno">{pageNo}</span>
         </footer>
       </div>
     </article>
@@ -257,7 +244,11 @@ export function JournalScreen({
     <main className="screen" style={{ height: "100dvh", overflow: "hidden" }}>
       <header className="pad row between">
         <h1 className="title">Günlüğüm</h1>
-        <button
+        <span className="row" style={{ gap: 8 }}>
+          <button className="icon-btn" onClick={() => current && onEdit(current.date)} aria-label="Bu sayfayı düzenle" disabled={!!mode}>
+            <PencilIcon />
+          </button>
+          <button
           className="pill"
           style={{ fontSize: 14 }}
           onClick={() => {
@@ -268,7 +259,8 @@ export function JournalScreen({
         >
           {MONTHS[sm]} {sy}
           <ChevronDownIcon />
-        </button>
+          </button>
+        </span>
       </header>
 
       <nav className="date-strip" ref={strip} aria-label="Gün seç">
@@ -308,7 +300,7 @@ export function JournalScreen({
         <span className="book-ribbon" aria-hidden="true" />
         {/* Alttaki sayfa */}
         <div className="book-page" style={{ transform: `translateX(${resist}px)`, transition: dragging ? "none" : "transform 300ms ease" }}>
-          <Page entry={pages[underIndex]} prev={pages[underIndex - 1] ?? null} pageNo={underIndex + 1} onEdit={() => onEdit(pages[underIndex].date)} />
+          <Page entry={pages[underIndex]} prev={pages[underIndex - 1] ?? null} pageNo={underIndex + 1} />
         </div>
 
         {/* Dönen sayfa */}
@@ -320,7 +312,7 @@ export function JournalScreen({
               transition: (dragging && !mode) || mode?.target === "start" ? "none" : `transform ${TURN_MS}ms cubic-bezier(.2,.7,.2,1)`,
             }}
           >
-            <Page entry={pages[topIndex]} prev={pages[topIndex - 1] ?? null} pageNo={topIndex + 1} onEdit={() => onEdit(pages[topIndex].date)} />
+            <Page entry={pages[topIndex]} prev={pages[topIndex - 1] ?? null} pageNo={topIndex + 1} />
             <div className="book-shade" style={{ opacity: shade }} aria-hidden="true" />
           </div>
         )}
