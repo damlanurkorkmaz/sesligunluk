@@ -1,0 +1,51 @@
+# Codemagic: iOS derlemesi ve TestFlight'a yükleme.
+# Kurulum (bir kez): Codemagic > Teams > Integrations > App Store Connect API anahtarını "GunNotuASC" adıyla ekle,
+# App Store Connect'te com.gunnotu.app Bundle ID'si ile uygulamayı oluştur ve aşağıdaki APP_STORE_APPLE_ID'yi doldur.
+workflows:
+  ios-testflight:
+    name: iOS → TestFlight
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: GunNotuASC
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.gunnotu.app
+      vars:
+        XCODE_PROJECT: ios/App/App.xcodeproj
+        XCODE_SCHEME: App
+        APP_STORE_APPLE_ID: 0000000000 # App Store Connect > Uygulama > Genel Bilgiler > Apple ID
+      node: 22
+      xcode: latest # Foundation Models için iOS 26 SDK (Xcode 26+) gerekir
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+    scripts:
+      - name: Bağımlılıklar
+        script: npm ci
+      - name: Web derlemesi (Next.js statik export)
+        script: npm run build
+      - name: Capacitor senkronizasyonu
+        script: npx cap sync ios
+      - name: İmzalama profilleri
+        script: xcode-project use-profiles
+      - name: IPA derlemesi
+        script: |
+          LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" || echo 0)
+          BUILD_NUMBER=$((LATEST + 1))
+          echo "Build numarası: $BUILD_NUMBER"
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME" \
+            --archive-xcargs "CURRENT_PROJECT_VERSION=$BUILD_NUMBER"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true

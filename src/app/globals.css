@@ -1,49 +1,438 @@
+/* Inner Voice paleti — ayrıntılar: inner-voice-design skill'i */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  --aubergine: #382a39;
+  --coral: #d99182;
+  --lilac: #b9a8c9;
+  --sage: #9aa58c;
+  --paper: #faf7f2;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+  --surface: #ffffff;
+  --ink: #382a39;
+  --ink-soft: #4a3a4b;
+  --muted: #6e6070;
+  --line: #ece6de;
+  --line-strong: #d9cfc4;
+  --lilac-tint: #eae3ef;
+  --coral-halo-1: #fbeeea;
+  --coral-halo-2: #f6e0d9;
+  --on-dark: #f5efe8;
+  --on-dark-muted: rgba(245, 239, 232, 0.72);
 
-html {
-  height: 100%;
-}
+  --radius-card: 20px;
+  --radius-btn: 16px;
+  --font: "Plus Jakarta Sans Variable", system-ui, -apple-system, sans-serif;
 
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-body {
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 * {
   box-sizing: border-box;
-  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
   margin: 0;
+  height: 100%;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
 }
 
-a {
+button {
+  font: inherit;
   color: inherit;
-  text-decoration: none;
+  cursor: pointer;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+:focus-visible {
+  outline: 2px solid var(--aubergine);
+  outline-offset: 2px;
+}
+
+/* ---------- Düzen ---------- */
+.screen {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding-top: calc(var(--safe-top) + 16px);
+}
+
+.screen--dark {
+  background: var(--aubergine);
+  color: var(--on-dark);
+}
+
+.pad {
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+.grow {
+  flex-grow: 1;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+}
+
+.between {
+  justify-content: space-between;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Tipografi ---------- */
+.eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.hero {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.12;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 14px;
+}
+
+.body {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+/* ---------- Kartlar ---------- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: 16px;
+}
+
+.card--lilac {
+  background: var(--lilac-tint);
+  border: 0;
+}
+
+/* ---------- Butonlar ---------- */
+.btn {
+  height: 56px;
+  border-radius: var(--radius-btn);
+  border: 0;
+  font-size: 17px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.btn--primary {
+  background: var(--coral);
+  color: var(--aubergine); /* mercan üstüne beyaz yazı yok */
+}
+
+.btn--ghost {
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+}
+
+.icon-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.screen--dark .icon-btn {
+  border: 0;
+  background: rgba(245, 239, 232, 0.1);
+  color: var(--on-dark);
+}
+
+.link-btn {
+  border: 0;
+  background: none;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 10px 0 10px 12px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.tag {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--lilac-tint);
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ---------- Kayıt butonu ---------- */
+.rec-halo {
+  position: relative;
+  width: 196px;
+  height: 196px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rec-halo::before,
+.rec-halo::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+}
+
+.rec-halo::before {
+  inset: 0;
+  background: var(--coral-halo-1);
+}
+
+.rec-halo::after {
+  inset: 22px;
+  background: var(--coral-halo-2);
+}
+
+.rec-btn {
+  position: relative;
+  z-index: 1;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--coral);
+  color: var(--aubergine);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 120ms ease;
+}
+
+.rec-btn:active {
+  transform: scale(0.96);
+}
+
+/* ---------- Ruh hali ---------- */
+.mood-dot {
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.week-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  border: 0;
+  background: none;
+  padding: 0;
+}
+
+.week-day--today {
+  color: var(--aubergine);
+  font-weight: 800;
+}
+
+.empty-ring {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line-strong);
+}
+
+.today-ring {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px dashed var(--coral);
+}
+
+/* ---------- Ses dalgası ---------- */
+.wave {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px;
+}
+
+.wave span {
+  display: block;
+  width: 4px;
+  border-radius: 2px;
+  transition: height 90ms linear;
+}
+
+/* ---------- Alt menü ---------- */
+.tabbar {
+  position: sticky;
+  bottom: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 8px 24px calc(var(--safe-bottom) + 8px);
+}
+
+.tab {
+  border: 0;
+  background: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 4px 0;
+  min-height: 52px;
+}
+
+.tab--active {
+  color: var(--aubergine);
+  font-weight: 800;
+}
+
+/* ---------- Takvim ---------- */
+.cal {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px 4px;
+}
+
+.cal-head {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.cal-cell {
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cal-day {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 0;
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 0;
+}
+
+/* ---------- Form ---------- */
+.textarea {
+  width: 100%;
+  min-height: 180px;
+  border: 1px solid var(--line-strong);
+  border-radius: 16px;
+  padding: 14px;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--surface);
+  resize: vertical;
+}
+
+.notice {
+  border-radius: 16px;
+  padding: 14px 16px;
+  background: #f6e9e4;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--lilac);
+  border-top-color: var(--aubergine);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2s;
+  }
+  .wave span {
+    transition: none;
   }
 }

@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Gün Notu
 
-## Getting Started
+Günde 60 saniyelik, Türkçe, tamamen cihazda çalışan sesli günlük. Ses kaydedilir, iPhone'un kendi konuşma tanımasıyla yazıya çevrilir ve Apple'ın cihaz içi modeliyle (Foundation Models) kısa bir özet ve ruh hali çıkarılır. Sunucu yok, ses telefondan çıkmaz.
 
-First, run the development server:
+> "Gün Notu" çalışma adıdır. Ad değişirse: `src/app.config.ts`, `capacitor.config.ts` (appId, appName), `ios/App/App/Info.plist` (CFBundleDisplayName), Xcode'daki `PRODUCT_BUNDLE_IDENTIFIER` ve `codemagic.yaml`.
+
+## Teknoloji
+
+| Katman | Ne |
+| --- | --- |
+| Arayüz | Next.js 16 (statik export, tek sayfa), React 19 |
+| Yerel kabuk | Capacitor 8, iOS, Swift Package Manager |
+| Yerel eklenti | `ios/App/App/GunlukNativePlugin.swift` (kayıt, yazıya çevirme, özet) |
+| Saklama | `@capacitor/preferences` (JSON); ileride SQLite |
+| Derleme | Codemagic → TestFlight (`codemagic.yaml`) |
+| Font | Plus Jakarta Sans (yerel, `@fontsource-variable`) |
+
+## Geliştirme
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev          # http://localhost:3000 — tarayıcıda sahte eklentiyle çalışır
+npm run build        # out/ klasörüne statik çıktı
+npx cap sync ios     # out/ klasörünü iOS projesine kopyalar
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Tarayıcıda kayıt, yazıya çevirme ve özet **sahtedir** (`src/lib/native.ts` içindeki `GunlukNativeWeb`). Gerçek davranış yalnızca iPhone'da görülür.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Yerel eklenti: GunlukNative
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Metot | Açıklama |
+| --- | --- |
+| `requestPermissions()` | Mikrofon + konuşma tanıma izni |
+| `startRecording({ maxSeconds })` | AAC/m4a kayıt, `Application Support/recordings` |
+| `getLevel()` | 0–1 ses seviyesi, ses dalgası için ~10 kez/sn |
+| `stopRecording()` / `cancelRecording()` | Kaydı bitir / sil |
+| `transcribe({ fileName })` | `SFSpeechURLRecognitionRequest`, tr-TR, `requiresOnDeviceRecognition = true` |
+| `isAIAvailable()` | Foundation Models hazır mı, Türkçe destekleniyor mu |
+| `summarize({ text })` | `@Generable DaySummary` → özet, ruh hali, en fazla 3 etiket |
+| `deleteAudio({ fileName })` | Ses dosyasını sil |
 
-## Learn More
+Eklenti `MainViewController.swift` içinde köprüye kaydedilir. Uygulama iOS 17+ çalışır; Foundation Models iOS 26+ ve Apple Intelligence destekli cihazlarda (iPhone 15 Pro ve sonrası) devreye girer, `-weak_framework FoundationModels` ile eski sürümlerde çökmez.
 
-To learn more about Next.js, take a look at the following resources:
+## Derleme (Codemagic)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. App Store Connect'te `com.gunnotu.app` Bundle ID ile uygulamayı oluştur.
+2. Codemagic > Integrations'a App Store Connect API anahtarını **GunNotuASC** adıyla ekle.
+3. `codemagic.yaml` içindeki `APP_STORE_APPLE_ID` değerini doldur.
+4. `main` dalına her push TestFlight'a yeni bir build gönderir.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Xcode 26 (iOS 26 SDK) gerekir; yaml `xcode: latest` kullanır.
 
-## Deploy on Vercel
+## İlk hafta testi (yol haritası: Doğrulama)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+TestFlight build'ini iPhone 15 Pro veya sonrasında, sistem dili Türkçe iken dene:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [ ] Mikrofon ve konuşma tanıma izinleri doğru metinlerle soruluyor
+- [ ] 60 sn dolunca kayıt kendiliğinden bitiyor
+- [ ] Türkçe yazıya çevirme cihaz içinde çalışıyor (uçak modunda da dene)
+- [ ] Özet Türkçe, 2 cümleyi geçmiyor, uydurma bilgi içermiyor
+- [ ] Ruh hali seçimi makul (5 farklı günle dene)
+- [ ] Apple Intelligence kapalıyken özet olmadan sorunsuz çalışıyor
+
+Özet kalitesi yetersizse plan B: yapay zekâ yalnızca etiket önerir, ruh halini kullanıcı seçer.
+
+## Henüz yok
+
+Ayarlar ekranı (hatırlatma saati, Face ID), ses oynatma, ay sonu kartı, Premium/RevenueCat, karanlık mod, SQLite + arama, iCloud yedeği.

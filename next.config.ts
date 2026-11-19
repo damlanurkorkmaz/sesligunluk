@@ -1,9 +1,10 @@
 import type { NextConfig } from "next";
 
+// Capacitor uygulamayı statik dosyalardan çalıştırır: sunucu yok.
 const nextConfig: NextConfig = {
-  /* config options here */
-  cacheComponents: true,
-  partialPrefetching: true,
+  output: "export",
+  images: { unoptimized: true },
+  trailingSlash: true,
 };
 
 export default nextConfig;

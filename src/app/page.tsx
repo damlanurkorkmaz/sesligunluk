@@ -1,69 +1,86 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
 
-export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+import { useCallback, useEffect, useState } from "react";
+import { Preferences } from "@capacitor/preferences";
+import { OnboardingScreen } from "@/components/OnboardingScreen";
+import { TodayScreen, PROMPTS } from "@/components/TodayScreen";
+import { RecordScreen } from "@/components/RecordScreen";
+import { DetailScreen, type Pending } from "@/components/DetailScreen";
+import { CalendarScreen } from "@/components/CalendarScreen";
+import { type Entry, listEntries } from "@/lib/entries";
+import { dayKey } from "@/lib/dates";
+
+type Route =
+  | { name: "loading" }
+  | { name: "onboarding" }
+  | { name: "today" | "calendar" }
+  | { name: "record" }
+  | { name: "detail"; date: string; pending: Pending | null; from: "today" | "calendar" };
+
+const ONBOARDED_KEY = "onboarded.v1";
+
+/**
+ * Tek sayfalık uygulama: Capacitor içinde sayfa yenilemeden ekranlar arasında geçiş.
+ * Ekranlar: Karşılama → Bugün ⇄ Takvim, Bugün → Kayıt → Detay.
+ */
+export default function App() {
+  const [route, setRoute] = useState<Route>({ name: "loading" });
+  const [entries, setEntries] = useState<Entry[]>([]);
+
+  const refresh = useCallback(async () => setEntries(await listEntries()), []);
+
+  useEffect(() => {
+    (async () => {
+      const { value } = await Preferences.get({ key: ONBOARDED_KEY });
+      await refresh();
+      setRoute(value ? { name: "today" } : { name: "onboarding" });
+    })();
+  }, [refresh]);
+
+  const prompt = PROMPTS[new Date().getDate() % PROMPTS.length];
+
+  switch (route.name) {
+    case "loading":
+      return null;
+    case "onboarding":
+      return (
+        <OnboardingScreen
+          onDone={async () => {
+            await Preferences.set({ key: ONBOARDED_KEY, value: "1" });
+            setRoute({ name: "today" });
+          }}
         />
-        <div className={styles.intro}>
-          <h1>
-            To get started, edit the{" "}
-            <code className={styles.code}>page.tsx</code> file.
-          </h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+      );
+    case "today":
+      return (
+        <TodayScreen
+          entries={entries}
+          onRecord={() => setRoute({ name: "record" })}
+          onOpen={(date) => setRoute({ name: "detail", date, pending: null, from: "today" })}
+          onTab={(t) => setRoute({ name: t })}
+        />
+      );
+    case "calendar":
+      return <CalendarScreen entries={entries} onOpen={(date) => setRoute({ name: "detail", date, pending: null, from: "calendar" })} onTab={(t) => setRoute({ name: t })} />;
+    case "record":
+      return (
+        <RecordScreen
+          prompt={prompt}
+          onCancel={() => setRoute({ name: "today" })}
+          onDone={(fileName, durationSec) => setRoute({ name: "detail", date: dayKey(), pending: { fileName, durationSec }, from: "today" })}
+        />
+      );
+    case "detail":
+      return (
+        <DetailScreen
+          key={`${route.date}-${route.pending?.fileName ?? "view"}`}
+          date={route.date}
+          pending={route.pending}
+          onBack={async () => {
+            await refresh();
+            setRoute({ name: route.from });
+          }}
+        />
+      );
+  }
 }
