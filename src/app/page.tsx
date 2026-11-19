@@ -11,7 +11,8 @@ import type { Tab } from "@/components/TabBar";
 import { SettingsScreen } from "@/components/SettingsScreen";
 import { LockScreen } from "@/components/LockScreen";
 import { App as CapApp } from "@capacitor/app";
-import { loadSettings, saveSettings, DEFAULT_SETTINGS } from "@/lib/settings";
+import { LocalNotifications } from "@capacitor/local-notifications";
+import { loadSettings, saveSettings } from "@/lib/settings";
 import { type Entry, listEntries } from "@/lib/entries";
 import { dayKey } from "@/lib/dates";
 
@@ -33,17 +34,36 @@ export default function App() {
   const [route, setRoute] = useState<Route>({ name: "loading" });
   const [entries, setEntries] = useState<Entry[]>([]);
   const [locked, setLocked] = useState(false);
+  const [name, setName] = useState("");
 
   const refresh = useCallback(async () => setEntries(await listEntries()), []);
+  const refreshSettings = useCallback(async () => setName((await loadSettings()).name), []);
 
   useEffect(() => {
     (async () => {
       const { value } = await Preferences.get({ key: ONBOARDED_KEY });
       await refresh();
-      if ((await loadSettings()).lockOn) setLocked(true);
+      const st = await loadSettings();
+      setName(st.name);
+      if (st.lockOn) setLocked(true);
       setRoute(value ? { name: "today" } : { name: "onboarding" });
     })();
   }, [refresh]);
+
+  // Hatırlatma bildirimine dokununca doğrudan Kayıt ekranı (kilitliyse kilit açılınca).
+  useEffect(() => {
+    let remove: (() => void) | undefined;
+    LocalNotifications.addListener("localNotificationActionPerformed", async (ev) => {
+      if (ev.notification.extra?.action !== "record") return;
+      const { value } = await Preferences.get({ key: ONBOARDED_KEY });
+      if (!value) return;
+      const todayDone = (await listEntries()).some((e) => e.date === dayKey());
+      setRoute(todayDone ? { name: "today" } : { name: "record" });
+    })
+      .then((h) => (remove = () => void h.remove()))
+      .catch(() => undefined);
+    return () => remove?.();
+  }, []);
 
   // Uygulama arka plandan dönünce kilit açıksa tekrar kilitle.
   useEffect(() => {
@@ -57,9 +77,12 @@ export default function App() {
   }, []);
 
   const prompt = PROMPTS[new Date().getDate() % PROMPTS.length];
-  const goTab = (t: Tab) => setRoute(t === "journal" ? { name: "journal" } : { name: t });
+  const goTab = (t: Tab) => {
+    if (t === "today") void refreshSettings(); // Ayarlar'da isim değişmiş olabilir
+    setRoute(t === "journal" ? { name: "journal" } : { name: t });
+  };
 
-  if (locked && route.name !== "loading") return <LockScreen onUnlock={() => setLocked(false)} />;
+  if (locked && route.name !== "loading" && route.name !== "onboarding") return <LockScreen name={name} onUnlock={() => setLocked(false)} />;
 
   switch (route.name) {
     case "loading":
@@ -67,9 +90,10 @@ export default function App() {
     case "onboarding":
       return (
         <OnboardingScreen
-          onDone={async () => {
+          onDone={async (st) => {
+            await saveSettings(st);
             await Preferences.set({ key: ONBOARDED_KEY, value: "1" });
-            await saveSettings(DEFAULT_SETTINGS);
+            setName(st.name);
             setRoute({ name: "today" });
           }}
         />
@@ -78,6 +102,7 @@ export default function App() {
       return (
         <TodayScreen
           entries={entries}
+          name={name}
           onRecord={() => setRoute({ name: "record" })}
           onOpen={(date) => setRoute({ name: "detail", date, pending: null, from: "today" })}
           onTab={goTab}

@@ -71,4 +71,4 @@ Ay sonu kartı, Premium/RevenueCat ve 7 gün sonra özet kilidi, karanlık mod, 
 
 ## Ekranlar
 
-Karşılama, Bugün, Kayıt, Kayıt detayı (ses oynatıcı dahil), Günlüğüm (defter görünümü: tarih şeridi, kaydırarak sayfa çevirme, ay seçici), Ayarlar (hatırlatma saati, Face ID kilidi, metinleri dışa aktarma, tüm verileri silme, cihaz durumu), Kilit.
+Giriş (deri kapak → kapak açılır → isim → hatırlatma saati → gizlilik ve izinler; yalnızca ilk açılışta), Bugün (saate ve duruma göre: isimle selam, sabah dünün kartı, geç saatte seri uyarısı, kayıt yapılmışsa günün sayfası), Kayıt, Kayıt detayı (ses oynatıcı dahil), Günlüğüm (defter görünümü: tarih şeridi, kaydırarak sayfa çevirme, ay seçici), Ayarlar (ad, hatırlatma saati, Face ID kilidi, metinleri dışa aktarma, tüm verileri silme, cihaz durumu), Kilit (kapalı defter kapağı; Face ID sonrası kapak açılır). Akşam hatırlatmasına dokununca doğrudan Kayıt ekranı açılır.

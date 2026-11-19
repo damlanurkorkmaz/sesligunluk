@@ -128,6 +128,26 @@ export function SettingsScreen({ entries, onTab, onDataCleared }: { entries: Ent
           </p>
         )}
 
+        <section aria-labelledby="h-you">
+          <h2 id="h-you" className="eyebrow" style={{ margin: "0 4px 8px" }}>Defterin</h2>
+          <div className="settings-group">
+            <label className="settings-row" htmlFor="owner-name">
+              <span>Adın</span>
+              <input
+                id="owner-name"
+                className="time-input"
+                style={{ fontWeight: 600, width: 160, textAlign: "right" }}
+                value={s?.name ?? ""}
+                maxLength={30}
+                placeholder="İsteğe bağlı"
+                autoCapitalize="words"
+                onChange={(e) => s && setS({ ...s, name: e.target.value })}
+                onBlur={(e) => update({ name: e.target.value.trim() })}
+              />
+            </label>
+          </div>
+        </section>
+
         <section aria-labelledby="h-reminder">
           <h2 id="h-reminder" className="eyebrow" style={{ margin: "0 4px 8px" }}>Hatırlatma</h2>
           <div className="settings-group">

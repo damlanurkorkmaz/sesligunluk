@@ -866,3 +866,355 @@ button:disabled {
     animation: none;
   }
 }
+
+/* ---------- Deri kapak (giriş ve kilit) ---------- */
+.nb-cover {
+  position: relative;
+  flex-shrink: 0;
+  perspective: 1400px;
+}
+
+/* Arkadaki sayfa kenarları */
+.nb-stack {
+  position: absolute;
+  top: 8px;
+  left: 16px;
+  right: -5px;
+  bottom: -5px;
+  border-radius: 6px 16px 16px 6px;
+  background: #efe7da;
+  box-shadow:
+    1.5px 1.5px 0 #e6ddcf,
+    3px 3px 0 #ddd3c3,
+    4.5px 4.5px 0 #d3c8b8;
+}
+
+/* Grogren kurdele */
+.nb-ribbon {
+  position: absolute;
+  bottom: -34px;
+  right: 52px;
+  width: 14px;
+  height: 72px;
+  background: repeating-linear-gradient(to bottom, var(--lilac) 0 1px, #ae9cc0 1px 2px);
+  box-shadow:
+    inset 3px 0 3px -2px rgba(0, 0, 0, 0.2),
+    inset -3px 0 3px -2px rgba(0, 0, 0, 0.2);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 85%, 0 100%);
+}
+
+/* Kapak açılınca görünen ilk sayfa */
+.nb-under {
+  position: absolute;
+  inset: 4px 0 0 10px;
+  border-radius: 4px 14px 14px 4px;
+  background: var(--paper-sheet);
+  box-shadow: inset 16px 0 16px -16px rgba(56, 42, 57, 0.28);
+  overflow: hidden;
+}
+
+/* Kapak: sol kenardaki spiralden döner */
+.nb-hinge {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  transform: rotateY(0deg);
+  transition: transform 900ms cubic-bezier(0.3, 0.6, 0.2, 1);
+  border-radius: 8px 18px 18px 8px;
+  box-shadow:
+    0 22px 44px rgba(56, 42, 57, 0.35),
+    0 4px 10px rgba(56, 42, 57, 0.2);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.nb-hinge--open {
+  transform: rotateY(-115deg);
+}
+
+.nb-leather {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  background: radial-gradient(120% 90% at 30% 20%, #4e3d52 0%, var(--aubergine) 45%, #261b27 100%);
+}
+
+.nb-grain {
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: overlay;
+  opacity: 0.55;
+}
+
+.nb-spine-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.35) 0, rgba(0, 0, 0, 0) 22px, rgba(255, 255, 255, 0.05) 26px, rgba(0, 0, 0, 0) 34px);
+}
+
+.nb-stitch {
+  position: absolute;
+  top: 11px;
+  bottom: 11px;
+  left: 30px;
+  right: 12px;
+  border: 1.5px dashed rgba(201, 186, 214, 0.55);
+  border-radius: 4px 12px 12px 4px;
+}
+
+.nb-face {
+  position: absolute;
+  inset: 0;
+  padding: 0 58px 0 40px; /* sağda lastik banda yer */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  text-align: center;
+}
+
+.nb-foil {
+  display: flex;
+  align-items: center;
+}
+
+.nb-foil span {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.25);
+}
+
+/* Kör baskı (deriye gömülü) başlık */
+.nb-title {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  color: rgba(18, 10, 20, 0.62);
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.14),
+    0 -1px 0 rgba(0, 0, 0, 0.35);
+}
+
+.nb-vignette {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 22px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Dokuma lastik bant */
+.nb-band {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  right: 34px;
+  width: 12px;
+  background: repeating-linear-gradient(45deg, #2a1f2b 0 2px, #3b2d3d 2px 4px);
+  box-shadow:
+    -1px 0 2px rgba(0, 0, 0, 0.4),
+    1px 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.nb-rings {
+  position: absolute;
+  z-index: 3;
+  left: -12px;
+  top: 18px;
+  bottom: 18px;
+  width: 26px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.nb-rings .spiral-ring {
+  width: 26px;
+  height: 8px;
+}
+
+.nb-rings .spiral-ring::after {
+  display: none;
+}
+
+/* Giriş sahnesi */
+.nb-scene {
+  position: relative;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 12px;
+}
+
+.nb-bgwave {
+  position: absolute;
+  left: -24px;
+  right: -24px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  opacity: 0.22;
+  pointer-events: none;
+}
+
+.nb-bgwave span {
+  width: 8px;
+  border-radius: 4px;
+}
+
+.nb-scene-book {
+  position: relative;
+  margin-left: -34px;
+  transition: margin-left 600ms ease;
+}
+
+.nb-scene-book--opening {
+  margin-left: 0;
+}
+
+.nb-peek {
+  position: absolute;
+  top: 10px;
+  left: 0;
+  width: 230px;
+  height: 300px;
+  transform-origin: 20% 90%;
+  background: var(--paper-sheet);
+  border-radius: 4px 14px 14px 4px;
+  box-shadow:
+    0 8px 22px rgba(56, 42, 57, 0.16),
+    0 1px 2px rgba(56, 42, 57, 0.1);
+  padding: 18px 16px 0 38px;
+  overflow: hidden;
+  background-image: linear-gradient(to right, transparent 26px, var(--paper-margin) 26px, var(--paper-margin) 27.5px, transparent 27.5px);
+}
+
+.nb-peek-stamp {
+  margin-top: 2px;
+  padding: 2px 6px;
+  border: 1.5px solid currentColor;
+  border-radius: 5px;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  transform: rotate(-8deg);
+}
+
+.nb-peek-ink {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: #dcd2df;
+  margin-top: 10px;
+}
+
+/* Vaat maddeleri */
+.promises {
+  display: flex;
+  gap: 10px;
+}
+
+.promise {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+.promise-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--lilac-tint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Adım göstergesi */
+.steps {
+  display: flex;
+  gap: 6px;
+}
+
+.steps span {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--line-strong);
+  transition: width 200ms ease;
+}
+
+.steps span.on {
+  width: 22px;
+  background: var(--aubergine);
+}
+
+/* Giriş adımlarında açık defter sayfası */
+.open-page {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.choice {
+  height: 48px;
+  border-radius: 14px;
+  font-size: 17px;
+  font-weight: 800;
+  background: #fff;
+  color: var(--aubergine);
+  border: 1px solid var(--line-strong);
+}
+
+.choice[aria-checked="true"] {
+  background: var(--aubergine);
+  color: var(--paper);
+  border: 1.5px solid var(--aubergine);
+}
+
+.name-input {
+  margin-top: 4px;
+  border: 0;
+  border-bottom: 2px solid var(--aubergine);
+  background: transparent;
+  font-family: var(--font-serif);
+  font-size: 24px;
+  color: var(--aubergine);
+  padding: 4px 0 6px;
+  border-radius: 0;
+  width: 100%;
+}
+
+.name-input:focus {
+  outline: none;
+  border-bottom-color: var(--coral);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nb-hinge,
+  .nb-scene-book {
+    transition: none;
+  }
+}
+
+/* Bugün: kayıt yapılmış günün sayfa kesiti */
+.today-page-text {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}

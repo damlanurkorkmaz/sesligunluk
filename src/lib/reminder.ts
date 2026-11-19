@@ -15,6 +15,7 @@ export async function scheduleDailyReminder(hour = 21, minute = 0): Promise<bool
           title: "Bugün nasıldı?",
           body: "60 saniyede anlat, gerisini biz hallederiz.",
           schedule: { on: { hour, minute }, allowWhileIdle: true },
+          extra: { action: "record" }, // dokununca doğrudan Kayıt ekranı
         },
       ],
     });

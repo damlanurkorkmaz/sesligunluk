@@ -5,9 +5,10 @@ export interface Settings {
   reminderHour: number;
   reminderMinute: number;
   lockOn: boolean;
+  name: string; // defterin sahibi; boş olabilir
 }
 
-export const DEFAULT_SETTINGS: Settings = { reminderOn: true, reminderHour: 21, reminderMinute: 0, lockOn: false };
+export const DEFAULT_SETTINGS: Settings = { reminderOn: true, reminderHour: 21, reminderMinute: 0, lockOn: false, name: "" };
 const KEY = "settings.v1";
 
 export async function loadSettings(): Promise<Settings> {
