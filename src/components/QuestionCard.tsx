@@ -1,68 +1,60 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { waveColor } from "@/lib/moods";
-
-type Phase = "back" | "front" | "leaving" | "drawing";
-const LEAVE_MS = 420;
-const WAVE = [6, 11, 17, 22, 15, 10, 6];
+import { useState } from "react";
+import { CloseIcon } from "./Icons";
 
 /**
- * "Aklına bir şey gelmezse" soru kartı: deri sırtlı bir desteden kart çekilir,
- * dokununca döner ve soru görünür; "başka kart" eskisini kenara atıp yenisini çeker.
+ * Soru kartları sayfanın sağ üst köşesinin altına sıkıştırılmış durur; uçları
+ * deri kapağın üstüne taşar. "Bir kart çek"e dokununca en üstteki kart oradan
+ * çıkıp sayfanın üstüne gelir ve dönerek soruyu gösterir.
  */
 export function QuestionCard({ prompts, start }: { prompts: string[]; start: number }) {
   const [ix, setIx] = useState(start % prompts.length);
-  const [phase, setPhase] = useState<Phase>("back");
-  const [draw, setDraw] = useState(0);
+  const [drawn, setDrawn] = useState(false);
+  const [n, setN] = useState(0);
 
-  useEffect(() => {
-    if (phase === "leaving") {
-      const t = setTimeout(() => {
-        setIx((i) => (i + 1) % prompts.length);
-        setDraw((n) => n + 1);
-        setPhase("drawing");
-      }, LEAVE_MS);
-      return () => clearTimeout(t);
+  function draw() {
+    if (drawn) {
+      setIx((i) => (i + 1) % prompts.length);
     }
-    if (phase === "drawing") {
-      const t = setTimeout(() => setPhase("front"), 90);
-      return () => clearTimeout(t);
-    }
-  }, [phase, prompts.length]);
-
-  const faceUp = phase === "front" || phase === "leaving";
+    setN((k) => k + 1);
+    setDrawn(true);
+  }
 
   return (
-    <div className="qdeck-wrap">
-      <div className="qdeck">
-        <span className="qcard-stack qcard-back qcard-stack--2" aria-hidden="true" />
-        <span className="qcard-stack qcard-back qcard-stack--1" aria-hidden="true" />
-        <button
-          key={draw}
-          className={`qcard qcard--${phase}`}
-          onClick={() => phase === "back" && setPhase("front")}
-          aria-label={faceUp ? prompts[ix] : "Bir soru kartı çek"}
-          aria-live="polite"
-        >
-          <span className="qcard-face qcard-back">
-            <span className="qcard-frame" />
-            <span className="qcard-wave" aria-hidden="true">
-              {WAVE.map((h, i) => (
-                <i key={i} style={{ height: h, background: waveColor(i / (WAVE.length - 1)) }} />
-              ))}
-            </span>
-            <span className="qcard-cta">Bir kart çek</span>
-          </span>
-          <span className="qcard-face qcard-front">
-            <span className="qcard-label">Bugünün sorusu</span>
-            <span className="qcard-q">“{prompts[ix]}”</span>
-          </span>
-        </button>
-      </div>
-      <button className="today-shuffle qdeck-again" onClick={() => setPhase("leaving")} disabled={!faceUp} style={{ visibility: faceUp ? "visible" : "hidden" }}>
-        ↻ başka kart çek
+    <>
+      <button className={`qtuck ${drawn ? "qtuck--drawn" : ""}`} onClick={draw} aria-label="Anlatacak bir şey yok mu? Bir soru kartı çek">
+        <span className="qtuck-card qtuck-card--3" aria-hidden="true" />
+        <span className="qtuck-card qtuck-card--2" aria-hidden="true" />
+        <span className="qtuck-card qtuck-card--1">
+          <span className="qtuck-kicker">Anlatacak bir şey yok mu?</span>
+          <span className="qtuck-cta">Bir kart çek ↑</span>
+        </span>
       </button>
-    </div>
+
+      {drawn ? (
+        <div className="qdrawn">
+          <div key={n} className="qdrawn-card" role="note" aria-live="polite">
+            <span className="qdrawn-face qdrawn-back" aria-hidden="true">
+              <span className="qtuck-cta">Bir kart çek</span>
+            </span>
+            <span className="qdrawn-face qdrawn-front">
+              <span className="qcard-label">Bugünün sorusu</span>
+              <span className="qcard-q">“{prompts[ix]}”</span>
+            </span>
+          </div>
+          <div className="qdrawn-actions">
+            <button className="today-shuffle" onClick={draw}>
+              ↻ başka kart çek
+            </button>
+            <button className="today-shuffle" onClick={() => setDrawn(false)} aria-label="Kartı geri koy">
+              <CloseIcon size={14} /> geri koy
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="today-blank" aria-hidden="true" />
+      )}
+    </>
   );
 }

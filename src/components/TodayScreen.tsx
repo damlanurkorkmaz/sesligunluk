@@ -57,7 +57,7 @@ export function TodayScreen({
   return (
     <main className="screen today">
       {/* Üst yarı: defterin deri kapağı */}
-      <section className="today-cover">
+      <section className={today ? "today-cover" : "today-cover today-cover--deck"}>
         <header className="today-head">
           <div className="today-date">
             <span className="today-daynum" aria-hidden="true">{now.getDate()}</span>
@@ -124,7 +124,9 @@ export function TodayScreen({
           </div>
         ) : (
           <div className="today-sheet-body today-sheet-body--empty">
-            <span className="today-eyebrow">AKLINA BİR ŞEY GELMEZSE</span>
+            <span className="today-eyebrow">
+              BUGÜNÜN SAYFASI <span className="today-eyebrow-soft">· henüz boş</span>
+            </span>
             <QuestionCard prompts={PROMPTS} start={now.getDate()} />
             <div className="today-rec">
               <div className="today-hint-wave" aria-hidden="true">
