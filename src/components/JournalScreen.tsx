@@ -9,6 +9,15 @@ import type { Entry } from "@/lib/entries";
 import { moodInfo } from "@/lib/moods";
 import { MONTHS, dayKey, fromKey, shortWeekday } from "@/lib/dates";
 
+/** Mühür mürekkebi: ruh hali renginin kâğıtta okunur (4.5:1) koyu tonu. */
+const STAMP_INK: Record<string, string> = {
+  harika: "#5E6C50",
+  iyi: "#5F6B54",
+  normal: "#6F6253",
+  yorgun: "#6E5A84",
+  zor: "#6B4E6E",
+};
+
 const WEEKDAYS_LONG = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
 const TURN_MS = 420;
 const MAX_ANGLE = 100; // sayfa omurgadan bu kadar döner, sonra görünmez olur
@@ -29,36 +38,28 @@ function Page({ entry, prev, pageNo, onEdit }: { entry: Entry; prev: Entry | nul
   return (
     <article className="paper" aria-label={`${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()} sayfası`}>
       <div className="paper-scroll">
-        <header className="row between" style={{ alignItems: "flex-start", gap: 12 }}>
-          <div className="col" style={{ gap: 2 }}>
-            {gap > 1 && <span className="paper-gap">{gap} gün sonra</span>}
+        <header className="paper-head">
+          <div className="col" style={{ gap: 0 }}>
+            {gap > 1 && <span className="paper-gap">{gap} gün sonra…</span>}
             <h2 className="paper-date">
               {d.getDate()} {MONTHS[d.getMonth()]}
             </h2>
-            <span className="small muted" style={{ fontWeight: 600 }}>
+            <span className="paper-weekday">
               {WEEKDAYS_LONG[d.getDay()]}, {d.getFullYear()}
             </span>
           </div>
-          <AudioPlayer compact fileName={entry.fileName} durationSec={entry.durationSec} waveform={entry.waveform ?? []} />
+          {m && (
+            <span className="mood-stamp" style={{ color: STAMP_INK[m.id] }}>
+              {m.label}
+            </span>
+          )}
         </header>
 
-        {(m || entry.tags.length > 0) && (
-          <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 14 }}>
-            {m && (
-              <span className="row" style={{ gap: 6, height: 28, padding: "0 10px", borderRadius: 999, background: m.color, color: m.ink, fontSize: 13, fontWeight: 700 }}>
-                {m.label}
-              </span>
-            )}
-            {entry.tags.map((t) => (
-              <span key={t} className="tag" style={{ height: 28 }}>
-                {t}
-              </span>
-            ))}
-          </div>
-        )}
+        {entry.tags.length > 0 && <div className="paper-tags">{entry.tags.map((t) => `#${t.replace(/\s+/g, "")}`).join("  ")}</div>}
 
         {entry.summary && (
           <aside className="paper-note">
+            <span className="paper-tape" aria-hidden="true" />
             <span className="eyebrow" style={{ color: "var(--aubergine)" }}>Özet</span>
             <span>{entry.summary}</span>
           </aside>
@@ -68,16 +69,21 @@ function Page({ entry, prev, pageNo, onEdit }: { entry: Entry; prev: Entry | nul
           {paragraphs.length > 0 ? paragraphs.map((p, i) => <p key={i}>{p}</p>) : <p className="muted">Bu sayfada henüz yazı yok.</p>}
         </div>
 
-        <footer className="row between" style={{ marginTop: 16 }}>
-          <button className="link-btn" style={{ paddingLeft: 0 }} onClick={onEdit}>
-            Düzenle
-          </button>
-          <span className="paper-pageno">s. {pageNo}</span>
+        <footer className="paper-foot">
+          <span className="row" style={{ gap: 12 }}>
+            <AudioPlayer compact fileName={entry.fileName} durationSec={entry.durationSec} waveform={entry.waveform ?? []} />
+            <button className="link-btn" style={{ padding: "10px 0" }} onClick={onEdit}>
+              Düzenle
+            </button>
+          </span>
+          <span className="paper-pageno">— {pageNo} —</span>
         </footer>
       </div>
     </article>
   );
 }
+
+const SPIRAL_RINGS = 14;
 
 export function JournalScreen({
   entries,
@@ -297,6 +303,9 @@ export function JournalScreen({
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
       >
+        <div className="book-cover" aria-hidden="true" />
+        <div className="book-edges" aria-hidden="true" />
+        <span className="book-ribbon" aria-hidden="true" />
         {/* Alttaki sayfa */}
         <div className="book-page" style={{ transform: `translateX(${resist}px)`, transition: dragging ? "none" : "transform 300ms ease" }}>
           <Page entry={pages[underIndex]} prev={pages[underIndex - 1] ?? null} pageNo={underIndex + 1} onEdit={() => onEdit(pages[underIndex].date)} />
@@ -315,6 +324,13 @@ export function JournalScreen({
             <div className="book-shade" style={{ opacity: shade }} aria-hidden="true" />
           </div>
         )}
+
+        {/* Spiral teller sayfaların üstünde durur; sayfa bunların etrafında döner */}
+        <div className="spiral" aria-hidden="true">
+          {Array.from({ length: SPIRAL_RINGS }, (_, i) => (
+            <span key={i} className="spiral-ring" />
+          ))}
+        </div>
       </div>
 
       <div className="pad row between" style={{ padding: "10px 24px 12px" }}>
