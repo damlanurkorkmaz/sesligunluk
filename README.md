@@ -2,7 +2,7 @@
 
 Günde 60 saniyelik, Türkçe, tamamen cihazda çalışan sesli günlük. Ses kaydedilir, iPhone'un kendi konuşma tanımasıyla yazıya çevrilir ve Apple'ın cihaz içi modeliyle (Foundation Models) kısa bir özet ve ruh hali çıkarılır. Sunucu yok, ses telefondan çıkmaz.
 
-> "Gün Notu" çalışma adıdır. Ad değişirse: `src/app.config.ts`, `capacitor.config.ts` (appId, appName), `ios/App/App/Info.plist` (CFBundleDisplayName), Xcode'daki `PRODUCT_BUNDLE_IDENTIFIER` ve `codemagic.yaml`.
+> "Gün Notu" geçici çalışma adıdır; depo adı `sesligunluk`. Bundle ID (`com.damlanur.sesligunluk`) isimden bağımsızdır ve değişmez. Ad değişirse: `src/app.config.ts`, `capacitor.config.ts` (appId, appName), `ios/App/App/Info.plist` (CFBundleDisplayName).
 
 ## Teknoloji
 
@@ -43,7 +43,7 @@ Eklenti `MainViewController.swift` içinde köprüye kaydedilir. Uygulama iOS 17
 
 ## Derleme (Codemagic)
 
-1. App Store Connect'te `com.gunnotu.app` Bundle ID ile uygulamayı oluştur.
+1. App Store Connect'te `com.damlanur.sesligunluk` Bundle ID ile uygulamayı oluştur.
 2. Codemagic > Integrations'a App Store Connect API anahtarını **GunNotuASC** adıyla ekle.
 3. `codemagic.yaml` içindeki `APP_STORE_APPLE_ID` değerini doldur.
 4. `main` dalına her push TestFlight'a yeni bir build gönderir.
