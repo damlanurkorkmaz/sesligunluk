@@ -29,6 +29,10 @@ export function MonthGrid({
   const prefix = `${year}-${String(month + 1).padStart(2, "0")}`;
   const monthCount = entries.filter((e) => e.date.startsWith(prefix)).length;
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
+  const monthEntries = entries.filter((e) => e.date.startsWith(prefix));
+  const counts = MOODS.map((m) => ({ ...m, n: monthEntries.filter((e) => e.mood === m.id).length }));
+  const moodTotal = counts.reduce((a, c) => a + c.n, 0);
+  const top = moodTotal ? [...counts].sort((a, b) => b.n - a.n)[0] : null;
 
   return (
     <div className="col" style={{ gap: 14 }}>
@@ -49,7 +53,7 @@ export function MonthGrid({
         </button>
       </div>
 
-      <div className="cal">
+      <div className="cal cal--mosaic">
         {WEEKDAYS_SHORT.map((w) => (
           <div key={w} className="cal-head">
             {w}
@@ -66,18 +70,15 @@ export function MonthGrid({
           const isToday = key === todayKey;
           const future = key > todayKey;
           const style: React.CSSProperties = e
-            ? { background: m?.color ?? "var(--lilac)", color: m?.ink ?? "var(--ink)", fontWeight: 700 }
-            : isToday
-              ? { border: "2px dashed var(--coral)", color: "var(--aubergine)", fontWeight: 800 }
-              : future
-                ? { color: "#7A6C7B", fontWeight: 500 }
-                : { border: "1.5px solid var(--line-strong)", color: "var(--muted)" };
+            ? { background: m?.color ?? "var(--lilac)", color: m?.ink ?? "var(--ink)" }
+            : {};
+          const kind = e ? "cal-tile--mood" : isToday ? "cal-tile--today" : future ? "cal-tile--future" : "cal-tile--empty";
           if (selected === key) style.boxShadow = "0 0 0 2px var(--paper), 0 0 0 4px var(--aubergine)";
           return (
             <div key={key} className="cal-cell">
               <button
-                className="cal-day"
-                style={{ ...style, opacity: 1 }}
+                className={`cal-tile ${kind}`}
+                style={style}
                 disabled={!e}
                 onClick={() => e && onPick(key)}
                 aria-label={`${day} ${MONTHS[month]}: ${m ? m.label : e ? "kayıt var" : "kayıt yok"}`}
@@ -90,13 +91,31 @@ export function MonthGrid({
         })}
       </div>
 
-      <div className="row" style={{ flexWrap: "wrap", gap: "6px 14px", borderTop: "1px solid var(--line)", paddingTop: 8 }}>
-        {MOODS.map((m) => (
-          <span key={m.id} className="row" style={{ gap: 6, fontSize: 13, fontWeight: 600 }}>
-            <span className="mood-dot" style={{ width: 10, height: 10, background: m.color }} />
-            {m.label}
-          </span>
-        ))}
+      <div className="moodmap">
+        <div className="moodmap-head">
+          <span className="moodmap-title">Ruh hali haritası</span>
+          {top && top.n > 0 && (
+            <span className="moodmap-top">
+              en sık: <b>{top.label.toLocaleLowerCase("tr-TR")}</b>
+            </span>
+          )}
+        </div>
+        <div className="moodmap-bar" aria-hidden="true">
+          {moodTotal === 0 ? (
+            <span style={{ flex: 1, background: "var(--line)" }} />
+          ) : (
+            counts.filter((c) => c.n > 0).map((c) => <span key={c.id} style={{ flex: c.n, background: c.color }} />)
+          )}
+        </div>
+        <div className="moodmap-legend">
+          {counts.map((c) => (
+            <span key={c.id} className={`moodmap-item ${c.n === 0 ? "moodmap-item--zero" : ""}`}>
+              <span className="mood-dot" style={{ width: 10, height: 10, background: c.color }} />
+              {c.label}
+              <b>{c.n}</b>
+            </span>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -5,7 +5,9 @@ import { BackIcon, LockIcon, PencilIcon } from "./Icons";
 import { type Entry, deleteEntry, getEntry, saveEntry } from "@/lib/entries";
 import { processRecording, type Step } from "@/lib/pipeline";
 import { GunlukNative, type Mood } from "@/lib/native";
-import { MOODS } from "@/lib/moods";
+import { MOODS, moodInfo } from "@/lib/moods";
+import { tap } from "@/lib/haptics";
+import { STAMP_INK } from "./JournalScreen";
 import { MONTHS, fromKey, formatClock, weekdayLong } from "@/lib/dates";
 import { AudioPlayer } from "./AudioPlayer";
 
@@ -25,6 +27,9 @@ const STEP_TEXT: Record<Step, string> = {
 export function DetailScreen({ date, pending, onBack }: { date: string; pending: Pending | null; onBack: () => void }) {
   const [entry, setEntry] = useState<Entry | null>(null);
   const [step, setStep] = useState<Step | null>(pending ? "transcribing" : null);
+  // Yeni kayıtta mühür henüz basılmadı: yapay zekânın önerisi parlar, kararı kullanıcı verir.
+  const [sealed, setSealed] = useState(!pending);
+  const [pressCount, setPressCount] = useState(0);
   const [notice, setNotice] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
@@ -49,6 +54,13 @@ export function DetailScreen({ date, pending, onBack }: { date: string; pending:
       setStep(null);
     })();
   }, [date, pending]);
+
+  function pressSeal(mood: Mood) {
+    setSealed(true);
+    setPressCount((n) => n + 1);
+    void tap("heavy");
+    void update({ mood });
+  }
 
   async function update(patch: Partial<Entry>) {
     if (!entry) return;
@@ -98,6 +110,16 @@ export function DetailScreen({ date, pending, onBack }: { date: string; pending:
       {/* Sayfa */}
       <section className="today-sheet detail-sheet">
         <div className="paper" aria-hidden="true" />
+        {entry && sealed && moodInfo(entry.mood) && (
+          <span
+            key={pressCount}
+            className={`mood-stamp detail-stamp ${pressCount > 0 ? "detail-stamp--press" : ""}`}
+            style={{ color: STAMP_INK[entry.mood as string] }}
+            aria-hidden="true"
+          >
+            {moodInfo(entry.mood)?.label}
+          </span>
+        )}
         <div className="today-sheet-body detail-body">
           {step && (
             <div className="detail-status" role="status">
@@ -114,14 +136,29 @@ export function DetailScreen({ date, pending, onBack }: { date: string; pending:
 
           {entry && (
             <>
-              <span className="today-eyebrow">GÜN NASILDI?{entry.aiGenerated && entry.mood ? " · otomatik seçildi" : ""}</span>
-              <div className="detail-moods" role="radiogroup" aria-label="Ruh hali">
+              {sealed ? (
+                <span className="today-eyebrow">GÜN NASILDI?</span>
+              ) : (
+                <div className="detail-ritual-head">
+                  <span className="detail-ritual-title">Mührünü bas</span>
+                  <span className="detail-ritual-sub">Gün nasıldı? Sana en yakın mühre dokun.</span>
+                </div>
+              )}
+              <div className={`detail-moods ${sealed ? "" : "detail-moods--ritual"}`} role="radiogroup" aria-label="Ruh hali">
                 {MOODS.map((m) => {
-                  const on = entry.mood === m.id;
+                  const on = sealed && entry.mood === m.id;
+                  const suggested = !sealed && entry.aiGenerated && entry.mood === m.id;
                   return (
-                    <button key={m.id} role="radio" aria-checked={on} className={`detail-mood ${on ? "detail-mood--on" : ""}`} onClick={() => update({ mood: m.id as Mood })}>
+                    <button
+                      key={m.id}
+                      role="radio"
+                      aria-checked={on}
+                      className={`detail-mood ${on ? "detail-mood--on" : ""} ${suggested ? "detail-mood--suggest" : ""}`}
+                      onClick={() => pressSeal(m.id as Mood)}
+                    >
                       <span className="seal" style={{ background: m.color }} />
                       {m.label}
+                      {suggested && <span className="detail-suggest">öneri</span>}
                     </button>
                   );
                 })}
