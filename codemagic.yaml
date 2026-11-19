@@ -48,4 +48,6 @@ workflows:
     publishing:
       app_store_connect:
         auth: integration
-        submit_to_testflight: true
+        # Yalnızca yükle: dahili test (kendi cihazın) için yeterli, Apple incelemesi gerekmez.
+        # Harici test grubu açılınca true yap ve App Store Connect > TestFlight > Test Bilgileri'ni doldur.
+        submit_to_testflight: false
