@@ -5,7 +5,7 @@ import { NotebookCover } from "./NotebookCover";
 import { GunlukNative } from "@/lib/native";
 import { journalTitle } from "@/lib/turkish";
 
-const OPEN_MS = 900;
+const OPEN_MS = 1500;
 
 /** Kilit ekranı = kapalı defter. Kimlik doğrulanınca kapak spiralden açılır. */
 export function LockScreen({ name, onUnlock }: { name: string; onUnlock: () => void }) {
@@ -43,10 +43,10 @@ export function LockScreen({ name, onUnlock }: { name: string; onUnlock: () => v
 
   return (
     <main className="screen pad" style={{ alignItems: "center", justifyContent: "center", gap: 28, textAlign: "center", paddingBottom: "calc(var(--safe-bottom) + 24px)" }}>
-      <div style={{ transform: opening ? "scale(1.04)" : "none", transition: "transform 900ms ease" }}>
+      <div style={{ transform: opening ? "scale(1.04)" : "none", transition: "transform 1500ms cubic-bezier(0.45, 0.05, 0.25, 1)" }}>
         <NotebookCover title={journalTitle(name)} width={250} height={340} opening={opening} under={firstPage} />
       </div>
-      <div className="col" style={{ gap: 6, alignItems: "center", opacity: opening ? 0 : 1, transition: "opacity 250ms ease", marginTop: 20 }}>
+      <div className="col" style={{ gap: 6, alignItems: "center", opacity: opening ? 0 : 1, transition: "opacity 450ms ease", marginTop: 20 }}>
         <span className="small muted" role="status">
           {failed ? "Doğrulanamadı. Tekrar dene." : "Defterin kilitli."}
         </span>

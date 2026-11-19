@@ -11,7 +11,7 @@ import { MONTHS } from "@/lib/dates";
 
 type Step = "cover" | "opening" | "name" | "reminder" | "privacy";
 const STEP_INDEX: Partial<Record<Step, number>> = { name: 0, reminder: 1, privacy: 2 };
-const OPEN_MS = 950;
+const OPEN_MS = 1750; // kapak yavaşça açılır, ardından sayfa yumuşakça belirir
 
 const PhoneIcon = () => (
   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -134,12 +134,12 @@ export function OnboardingScreen({ onDone }: { onDone: (s: Settings) => void }) 
     return (
       <main className="screen pad" style={{ paddingBottom: "calc(var(--safe-bottom) + 24px)", overflow: "hidden" }}>
         <CoverScene title="Günlüğüm" opening={step === "opening"} under={firstPage} />
-        <div className="col" style={{ gap: 12, textAlign: "center", alignItems: "center", opacity: step === "opening" ? 0 : 1, transition: "opacity 300ms ease" }}>
+        <div className="col" style={{ gap: 12, textAlign: "center", alignItems: "center", opacity: step === "opening" ? 0 : 1, transition: "opacity 500ms ease" }}>
           <h1 className="hero" style={{ fontSize: 30 }}>
             Gününü 60 saniyede anlat.
           </h1>
         </div>
-        <div className="promises" style={{ marginTop: 22, opacity: step === "opening" ? 0 : 1, transition: "opacity 300ms ease" }}>
+        <div className="promises" style={{ marginTop: 22, opacity: step === "opening" ? 0 : 1, transition: "opacity 500ms ease" }}>
           <div className="promise">
             <span className="promise-icon">
               <MicIcon size={20} />
@@ -165,7 +165,7 @@ export function OnboardingScreen({ onDone }: { onDone: (s: Settings) => void }) 
             senin
           </div>
         </div>
-        <button className="btn btn--primary" style={{ marginTop: 26 }} onClick={() => setStep("opening")} disabled={step === "opening"}>
+        <button className="btn btn--primary" style={{ marginTop: 26, opacity: step === "opening" ? 0 : 1, transition: "opacity 500ms ease" }} onClick={() => setStep("opening")} disabled={step === "opening"}>
           Defteri aç
         </button>
       </main>
@@ -175,7 +175,7 @@ export function OnboardingScreen({ onDone }: { onDone: (s: Settings) => void }) 
   // ---------- 2 · İsim ----------
   if (step === "name") {
     return (
-      <main className="screen pad" style={{ paddingBottom: "calc(var(--safe-bottom) + 24px)" }}>
+      <main className="screen pad step-enter" style={{ paddingBottom: "calc(var(--safe-bottom) + 24px)" }}>
         <StepBar step={step} onBack={() => setStep("cover")} onSkip={() => setStep("reminder")} />
         <div style={{ marginTop: 24 }}>
           <OpenPage height={440}>

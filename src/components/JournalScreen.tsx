@@ -5,6 +5,8 @@ import { TabBar, type Tab } from "./TabBar";
 import { BackIcon, ChevronDownIcon, CloseIcon, NextIcon, PencilIcon } from "./Icons";
 import { MonthGrid } from "./MonthGrid";
 import { AudioPlayer } from "./AudioPlayer";
+import { NotebookCover } from "./NotebookCover";
+import { journalTitle } from "@/lib/turkish";
 import type { Entry } from "@/lib/entries";
 import { moodInfo } from "@/lib/moods";
 import { MONTHS, dayKey, fromKey, shortWeekday } from "@/lib/dates";
@@ -74,12 +76,14 @@ const SPIRAL_RINGS = 14;
 
 export function JournalScreen({
   entries,
+  name = "",
   initialDate,
   onEdit,
   onRecord,
   onTab,
 }: {
   entries: Entry[];
+  name?: string;
   initialDate?: string;
   onEdit: (date: string) => void;
   onRecord: () => void;
@@ -226,7 +230,9 @@ export function JournalScreen({
           <h1 className="title">Günlüğüm</h1>
         </header>
         <div className="grow col pad" style={{ alignItems: "center", justifyContent: "center", gap: 16, textAlign: "center" }}>
-          <div className="paper" style={{ position: "relative", width: 220, height: 260, transform: "rotate(-3deg)" }} aria-hidden="true" />
+          <div className="journal-empty-book" aria-hidden="true">
+            <NotebookCover title={journalTitle(name)} width={200} height={268} />
+          </div>
           <strong style={{ fontSize: 20, fontWeight: 800 }}>Defterin seni bekliyor</strong>
           <span className="muted" style={{ maxWidth: 280 }}>
             İlk kaydını yaptığında burada bir defter sayfası olarak görünecek.

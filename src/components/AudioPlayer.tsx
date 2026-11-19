@@ -112,7 +112,7 @@ export function AudioPlayer({ fileName, durationSec, waveform, compact = false }
         {playing ? <PauseIcon /> : <PlayIcon />}
       </button>
 
-      <div className="grow wave" aria-hidden="true" style={{ height: 32, gap: 1 }}>
+      <div className="grow wave" aria-hidden="true" style={{ height: 32, gap: 1, minWidth: 0 }}>
         {bars.map((lv, i) => {
           const t = i / (bars.length - 1);
           const played = t <= progress && (playing || position > 0);
@@ -120,7 +120,9 @@ export function AudioPlayer({ fileName, durationSec, waveform, compact = false }
             <span
               key={i}
               style={{
-                width: 3,
+                flex: "1 1 0",
+                minWidth: 1.5,
+                maxWidth: 3,
                 height: Math.max(4, lv * 32),
                 background: waveColor(t),
                 opacity: played || (!playing && position === 0) ? 1 : 0.35,

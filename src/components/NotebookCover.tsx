@@ -126,12 +126,10 @@ export function CoverScene({ title, opening, under }: { title: string; opening: 
         ))}
       </div>
       <div className={`nb-scene-book ${opening ? "nb-scene-book--opening" : ""}`}>
-        {!opening && (
-          <>
-            <PeekPage date="12 Kasım" weekday="Perşembe" stamp="İYİ" ink="#5F6B54" rotate={14} x={38} lines={[92, 84, 70]} />
-            <PeekPage date="18 Kasım" weekday="Çarşamba" stamp="HARİKA" ink="#5E6C50" rotate={6} x={22} lines={[96, 88, 92, 60]} />
-          </>
-        )}
+        <div className={`nb-peeks ${opening ? "nb-peeks--away" : ""}`}>
+          <PeekPage date="12 Kasım" weekday="Perşembe" stamp="İYİ" ink="#5F6B54" rotate={14} x={38} lines={[92, 84, 70]} />
+          <PeekPage date="18 Kasım" weekday="Çarşamba" stamp="HARİKA" ink="#5E6C50" rotate={6} x={22} lines={[96, 88, 92, 60]} />
+        </div>
         <NotebookCover title={title} opening={opening} under={under} />
       </div>
     </div>

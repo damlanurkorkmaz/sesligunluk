@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { FlameIcon, MicIcon, NextIcon } from "./Icons";
 import { TabBar, type Tab } from "./TabBar";
 import { AudioPlayer } from "./AudioPlayer";
+import { QuestionCard } from "./QuestionCard";
 import { type Entry, currentStreak } from "@/lib/entries";
 import { MONTHS, addDays, dayKey, greeting, shortWeekday, weekdayLong } from "@/lib/dates";
 import { moodInfo } from "@/lib/moods";
@@ -44,7 +44,6 @@ export function TodayScreen({
   const today = byDate.get(todayKey) ?? null;
   const streak = currentStreak(entries, now);
   const week = Array.from({ length: 7 }, (_, i) => addDays(now, i - 6));
-  const [promptIx, setPromptIx] = useState(now.getDate() % PROMPTS.length);
   const hour = now.getHours();
   const streakAtRisk = !today && hour >= 21 && streak > 0;
   const firstName = name.trim().split(/\s+/)[0] ?? "";
@@ -72,9 +71,12 @@ export function TodayScreen({
               </h1>
             </div>
           </div>
-          <span className="today-streak" aria-label={`Seri: ${streak} gün`}>
-            <FlameIcon />
-            {streak}
+          <span className={`today-streak ${streak > 0 ? "today-streak--on" : ""}`} aria-label={`Seri: ${streak} gün`}>
+            <FlameIcon size={18} color="#C9705F" />
+            <span className="today-streak-num">{streak}</span>
+            <span className="today-streak-unit">gün
+              <br />
+              seri</span>
           </span>
         </header>
 
@@ -123,11 +125,7 @@ export function TodayScreen({
         ) : (
           <div className="today-sheet-body today-sheet-body--empty">
             <span className="today-eyebrow">AKLINA BİR ŞEY GELMEZSE</span>
-            <p className="today-prompt">“{PROMPTS[promptIx]}”</p>
-            <button className="today-shuffle" onClick={() => setPromptIx((i) => (i + 1) % PROMPTS.length)}>
-              ↻ başka bir soru
-            </button>
-            <div className="today-blank" aria-hidden="true" />
+            <QuestionCard prompts={PROMPTS} start={now.getDate()} />
             <div className="today-rec">
               <div className="today-hint-wave" aria-hidden="true">
                 {HINT_WAVE.map(([h, c], i) => (

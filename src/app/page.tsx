@@ -113,6 +113,7 @@ export default function App() {
         <JournalScreen
           key={route.date ?? "latest"}
           entries={entries}
+          name={name}
           initialDate={route.date}
           onEdit={(date) => setRoute({ name: "detail", date, pending: null, from: "journal" })}
           onRecord={() => setRoute({ name: "record" })}

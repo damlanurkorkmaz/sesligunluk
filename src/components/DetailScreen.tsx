@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { BackIcon, LockIcon, SparkIcon } from "./Icons";
+import { BackIcon, LockIcon, PencilIcon } from "./Icons";
 import { type Entry, deleteEntry, getEntry, saveEntry } from "@/lib/entries";
 import { processRecording, type Step } from "@/lib/pipeline";
 import { GunlukNative, type Mood } from "@/lib/native";
 import { MOODS } from "@/lib/moods";
-import { fromKey, longDate, formatClock } from "@/lib/dates";
+import { MONTHS, fromKey, formatClock, weekdayLong } from "@/lib/dates";
 import { AudioPlayer } from "./AudioPlayer";
 
 export interface Pending {
@@ -73,131 +73,108 @@ export function DetailScreen({ date, pending, onBack }: { date: string; pending:
   const d = fromKey(date);
 
   return (
-    <main className="screen pad" style={{ gap: 18, paddingBottom: "calc(var(--safe-bottom) + 32px)" }}>
-      <header className="row between">
-        <button className="icon-btn" onClick={onBack} aria-label="Geri" disabled={step !== null}>
-          <BackIcon />
-        </button>
-        <div className="col" style={{ alignItems: "center" }}>
-          <strong style={{ fontSize: 17, fontWeight: 800 }}>{longDate(d).split(",")[0]}</strong>
-          <span style={{ fontSize: 13 }} className="muted">
-            {longDate(d).split(", ")[1]}
-            {entry ? ` · ${formatClock(entry.durationSec)}` : ""}
-          </span>
-        </div>
-        <span style={{ width: 44 }} />
-      </header>
-
-      {step && (
-        <div className="card row" style={{ gap: 12 }} role="status">
-          <span className="spinner" />
-          <span style={{ fontWeight: 600 }}>{STEP_TEXT[step]}</span>
-        </div>
-      )}
-
-      {notice && (
-        <p className="notice" role="alert" style={{ margin: 0 }}>
-          {notice}
-        </p>
-      )}
-
-      {entry && (
-        <>
-          <section className="col" style={{ gap: 10 }} aria-label="Ruh hali">
-            <span className="eyebrow">Bugün nasıldı?{entry.aiGenerated && entry.mood ? " · otomatik seçildi" : ""}</span>
-            <div className="row" style={{ gap: 8, flexWrap: "wrap" }} role="radiogroup">
-              {MOODS.map((m) => {
-                const on = entry.mood === m.id;
-                return (
-                  <button
-                    key={m.id}
-                    role="radio"
-                    aria-checked={on}
-                    onClick={() => update({ mood: m.id as Mood })}
-                    className="row"
-                    style={{
-                      gap: 8,
-                      height: 40,
-                      padding: "0 14px",
-                      borderRadius: 999,
-                      fontSize: 14,
-                      fontWeight: 700,
-                      background: on ? m.color : "var(--surface)",
-                      color: on ? m.ink : "var(--ink)",
-                      border: on ? `1.5px solid ${m.color}` : "1px solid var(--line)",
-                    }}
-                  >
-                    {!on && <span className="mood-dot" style={{ width: 10, height: 10, background: m.color }} />}
-                    {m.label}
-                  </button>
-                );
-              })}
-            </div>
-            {entry.tags.length > 0 && (
-              <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                {entry.tags.map((t) => (
-                  <span key={t} className="tag">
-                    {t}
-                  </span>
-                ))}
-              </div>
-            )}
-          </section>
-
-          <AudioPlayer fileName={entry.fileName} durationSec={entry.durationSec} waveform={entry.waveform ?? []} />
-
-          {entry.summary && (
-            <section className="card card--lilac col" style={{ gap: 8, padding: 18 }}>
-              <span className="row eyebrow" style={{ gap: 8, color: "var(--aubergine)" }}>
-                <SparkIcon />
-                Özet
+    <main className="screen detail">
+      {/* Deri kapak başlık: tarih ve geri */}
+      <section className="today-cover detail-cover">
+        <div className="detail-head">
+          <button className="detail-back" onClick={onBack} aria-label="Geri" disabled={step !== null}>
+            <BackIcon />
+          </button>
+          <div className="today-date">
+            <span className="today-daynum" aria-hidden="true">{d.getDate()}</span>
+            <div className="col" style={{ gap: 4, minWidth: 0 }}>
+              <span className="today-month">
+                {MONTHS[d.getMonth()]} · {weekdayLong(d)}
               </span>
-              <p style={{ margin: 0, fontSize: 17, lineHeight: 1.5, fontWeight: 600 }}>{entry.summary}</p>
-            </section>
+              <span className="detail-sub">
+                {d.getFullYear()}
+                {entry ? ` · ${formatClock(entry.durationSec)} kayıt` : ""}
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Sayfa */}
+      <section className="today-sheet detail-sheet">
+        <div className="paper" aria-hidden="true" />
+        <div className="today-sheet-body detail-body">
+          {step && (
+            <div className="detail-status" role="status">
+              <span className="spinner" />
+              <span>{STEP_TEXT[step]}</span>
+            </div>
           )}
 
-          <section className="col" style={{ gap: 10 }}>
-            <div className="row between">
-              <strong style={{ fontSize: 15, fontWeight: 800 }}>Metin</strong>
-              {!editing && (
-                <button
-                  className="link-btn"
-                  onClick={() => {
-                    setDraft(entry.transcript);
-                    setEditing(true);
-                  }}
-                >
-                  Düzenle
-                </button>
+          {notice && (
+            <p className="notice" role="alert" style={{ margin: "0 0 14px" }}>
+              {notice}
+            </p>
+          )}
+
+          {entry && (
+            <>
+              <span className="today-eyebrow">GÜN NASILDI?{entry.aiGenerated && entry.mood ? " · otomatik seçildi" : ""}</span>
+              <div className="detail-moods" role="radiogroup" aria-label="Ruh hali">
+                {MOODS.map((m) => {
+                  const on = entry.mood === m.id;
+                  return (
+                    <button key={m.id} role="radio" aria-checked={on} className={`detail-mood ${on ? "detail-mood--on" : ""}`} onClick={() => update({ mood: m.id as Mood })}>
+                      <span className="seal" style={{ background: m.color }} />
+                      {m.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="detail-player">
+                <AudioPlayer fileName={entry.fileName} durationSec={entry.durationSec} waveform={entry.waveform ?? []} />
+              </div>
+
+              <div className="row between" style={{ marginTop: 22, alignItems: "center" }}>
+                <span className="today-eyebrow">SAYFA</span>
+                {!editing && (
+                  <button
+                    className="detail-edit"
+                    aria-label="Metni düzenle"
+                    onClick={() => {
+                      setDraft(entry.transcript);
+                      setEditing(true);
+                    }}
+                  >
+                    <PencilIcon size={16} />
+                    Düzenle
+                  </button>
+                )}
+              </div>
+
+              {editing ? (
+                <>
+                  <label htmlFor="transcript" className="small muted" style={{ marginTop: 6 }}>
+                    Bugünü kendi kelimelerinle yaz ya da düzelt
+                  </label>
+                  <textarea id="transcript" className="detail-textarea" value={draft} onChange={(e) => setDraft(e.target.value)} />
+                  <button className="btn btn--primary" style={{ marginTop: 12 }} onClick={saveText}>
+                    Kaydet
+                  </button>
+                </>
+              ) : (
+                <p className="detail-text">{entry.transcript || "Bu sayfada henüz yazı yok. Düzenle'ye dokunup kendin yazabilirsin."}</p>
               )}
-            </div>
-            {editing ? (
-              <>
-                <label htmlFor="transcript" className="small muted">
-                  Bugünü kendi kelimelerinle yaz ya da düzelt
-                </label>
-                <textarea id="transcript" className="textarea" value={draft} onChange={(e) => setDraft(e.target.value)} />
-                <button className="btn btn--primary" onClick={saveText}>
-                  Kaydet
+
+              <div className="detail-foot">
+                <span className="row small muted" style={{ gap: 6 }}>
+                  <LockIcon size={14} />
+                  Yazıya çevirme bu cihazda yapıldı
+                </span>
+                <button className="link-btn" onClick={remove} style={{ padding: "10px 0", color: confirmDelete ? "#9A3B2C" : "var(--muted)" }}>
+                  {confirmDelete ? "Silmek için tekrar dokun" : "Sayfayı sil"}
                 </button>
-              </>
-            ) : (
-              <p className="body" style={{ margin: 0 }}>
-                {entry.transcript || "Metin yok."}
-              </p>
-            )}
-          </section>
-
-          <div className="row small muted" style={{ gap: 8 }}>
-            <LockIcon size={14} />
-            Yazıya çevirme ve özet bu cihazda yapıldı
-          </div>
-
-          <button className="link-btn" onClick={remove} style={{ alignSelf: "flex-start", padding: "10px 0", color: confirmDelete ? "#9A3B2C" : "var(--muted)" }}>
-            {confirmDelete ? "Silmek için tekrar dokun" : "Kaydı sil"}
-          </button>
-        </>
-      )}
+              </div>
+            </>
+          )}
+        </div>
+      </section>
     </main>
   );
 }
