@@ -175,11 +175,11 @@ export function OnboardingScreen({ onDone }: { onDone: (s: Settings) => void }) 
       </div>
     );
     return (
-      <main className="screen pad" style={{ paddingBottom: "calc(var(--safe-bottom) + 24px)", overflow: "hidden" }}>
+      <main className="screen pad onb-cover" style={{ paddingBottom: "calc(var(--safe-bottom) + 24px)", overflow: "hidden" }}>
         <div ref={sceneRef}>
           <CoverScene title="Günlüğüm" opening={step === "opening"} under={firstPage} />
         </div>
-        <div className="col" style={{ gap: 12, textAlign: "center", alignItems: "center", opacity: step === "opening" ? 0 : 1, transition: "opacity 500ms ease" }}>
+        <div className="col onb-cover-head" style={{ gap: 12, textAlign: "center", alignItems: "center", opacity: step === "opening" ? 0 : 1, transition: "opacity 500ms ease" }}>
           <h1 className="hero" style={{ fontSize: 30 }}>
             Gününü 60 saniyede anlat.
           </h1>

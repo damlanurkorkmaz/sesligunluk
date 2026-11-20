@@ -2630,6 +2630,15 @@ button:disabled {
   bottom: 8px;
 }
 
+/* Giriş kapağı: defter, başlık ve vaatler ekranda dengeli dursun */
+.onb-cover {
+  justify-content: center;
+}
+
+.onb-cover-head {
+  margin-top: 44px; /* kurdelenin ve sayfaların altından rahatça ayrılsın */
+}
+
 /* ================= Antika defter ================= */
 :root {
   --paper-sheet: #fbf4e6;
