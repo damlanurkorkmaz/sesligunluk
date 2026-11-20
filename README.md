@@ -1,8 +1,8 @@
-# Gün Notu
+# İçses
 
 Günde 60 saniyelik, Türkçe, tamamen cihazda çalışan sesli günlük. Ses kaydedilir, iPhone'un kendi konuşma tanımasıyla yazıya çevrilir ve Apple'ın cihaz içi modeliyle (Foundation Models) kısa bir özet ve ruh hali çıkarılır. Sunucu yok, ses telefondan çıkmaz.
 
-> "Gün Notu" geçici çalışma adıdır; depo adı `sesligunluk`. Bundle ID (`com.damlanur.sesligunluk`) isimden bağımsızdır ve değişmez. Ad değişirse: `src/app.config.ts`, `capacitor.config.ts` (appId, appName), `ios/App/App/Info.plist` (CFBundleDisplayName).
+> Uygulamanın adı **İçses**; App Store'da "İçses: Sesli Günlük" olarak listelenir. Depo adı `sesligunluk`. Bundle ID (`com.damlanur.sesligunluk`) isimden bağımsızdır ve değişmez. Ad değişirse: `src/app.config.ts`, `capacitor.config.ts` (appName), `ios/App/App/Info.plist` (CFBundleDisplayName).
 
 ## Teknoloji
 
