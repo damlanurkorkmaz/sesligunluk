@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { App } from "@capacitor/app";
 import { Share } from "@capacitor/share";
 import { TabBar, type Tab } from "./TabBar";
-import { LockIcon } from "./Icons";
+import { LockIcon, PencilIcon } from "./Icons";
 import { type Settings, loadSettings, saveSettings } from "@/lib/settings";
 import { cancelReminder, scheduleDailyReminder } from "@/lib/reminder";
 import { type Entry, deleteAllEntries } from "@/lib/entries";
@@ -133,17 +133,21 @@ export function SettingsScreen({ entries, onTab, onDataCleared }: { entries: Ent
           <div className="settings-group">
             <label className="settings-row" htmlFor="owner-name">
               <span>Adın</span>
+              <span className="settings-name">
               <input
                 id="owner-name"
-                className="time-input"
-                style={{ fontWeight: 600, width: 160, textAlign: "right" }}
+                className="settings-name-input"
                 value={s?.name ?? ""}
                 maxLength={30}
                 placeholder="İsteğe bağlı"
                 autoCapitalize="words"
                 onChange={(e) => s && setS({ ...s, name: e.target.value })}
                 onBlur={(e) => update({ name: e.target.value.trim() })}
+                onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+                enterKeyHint="done"
               />
+              <PencilIcon size={15} />
+              </span>
             </label>
           </div>
         </section>

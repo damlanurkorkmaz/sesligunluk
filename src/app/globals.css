@@ -511,14 +511,64 @@ button:disabled {
 }
 
 .time-input {
+  -webkit-appearance: none;
+  appearance: none;
   font: inherit;
   font-size: 16px;
   font-weight: 700;
-  color: var(--ink);
-  border: 1px solid var(--line-strong);
-  border-radius: 10px;
-  padding: 6px 10px;
-  background: var(--paper);
+  font-variant-numeric: tabular-nums;
+  color: var(--aubergine);
+  border: 0;
+  border-radius: 12px;
+  padding: 8px 12px;
+  min-height: 38px;
+  background: #f3ece4;
+  outline: none;
+}
+
+.time-input:focus {
+  box-shadow: 0 0 0 2px var(--coral);
+}
+
+/* Ayarlar: isim, satırın içinde düz yazı gibi; dokununca düzenlenir */
+.settings-name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  color: #a8949e;
+}
+
+.settings-name-input {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1;
+  min-width: 0;
+  max-width: 190px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  background: linear-gradient(var(--coral), var(--coral)) right bottom / 0 2px no-repeat;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: right;
+  color: var(--aubergine);
+  caret-color: var(--coral);
+  transition: background-size 200ms ease;
+}
+
+.settings-name-input::placeholder {
+  color: #b3a2ab;
+  font-weight: 500;
+}
+
+.settings-name-input:focus {
+  background-size: 100% 2px;
 }
 
 .status-dot {
