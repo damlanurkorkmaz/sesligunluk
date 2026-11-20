@@ -134,19 +134,23 @@ export function SettingsScreen({ entries, onTab, onDataCleared }: { entries: Ent
             <label className="settings-row" htmlFor="owner-name">
               <span>Adın</span>
               <span className="settings-name">
-              <input
-                id="owner-name"
-                className="settings-name-input"
-                value={s?.name ?? ""}
-                maxLength={30}
-                placeholder="İsteğe bağlı"
-                autoCapitalize="words"
-                onChange={(e) => s && setS({ ...s, name: e.target.value })}
-                onBlur={(e) => update({ name: e.target.value.trim() })}
-                onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-                enterKeyHint="done"
-              />
-              <PencilIcon size={15} />
+                {/* Görünmez kopya alanın genişliğini belirler: çizgi yazı kadar uzar */}
+                <span className="settings-name-fit" data-value={s?.name || "İsteğe bağlı"}>
+                  <input
+                    id="owner-name"
+                    className="settings-name-input"
+                    value={s?.name ?? ""}
+                    maxLength={30}
+                    placeholder="İsteğe bağlı"
+                    autoCapitalize="words"
+                    size={1}
+                    onChange={(e) => s && setS({ ...s, name: e.target.value })}
+                    onBlur={(e) => update({ name: e.target.value.trim() })}
+                    onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+                    enterKeyHint="done"
+                  />
+                </span>
+                <PencilIcon size={15} />
               </span>
             </label>
           </div>

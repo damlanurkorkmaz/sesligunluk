@@ -541,24 +541,45 @@ button:disabled {
   color: #a8949e;
 }
 
+/* Girdi ile görünmez kopyası aynı hücrede: hücre yazı kadar genişler (en az 72px) */
+.settings-name-fit {
+  display: inline-grid;
+  min-width: 72px;
+  max-width: 100%;
+  background: linear-gradient(var(--line-strong, #d9cfc4), var(--line-strong, #d9cfc4)) left bottom / 100% 1.5px no-repeat;
+  transition: background 200ms ease;
+}
+
+.settings-name-fit::after,
 .settings-name-input {
-  -webkit-appearance: none;
-  appearance: none;
-  flex: 1;
-  min-width: 0;
-  height: 36px;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  outline: none;
-  background: linear-gradient(var(--coral), var(--coral)) left bottom / 0 2px no-repeat;
+  grid-area: 1 / 1;
   font: inherit;
   font-size: 16px;
   font-weight: 700;
+  padding: 0 2px;
+}
+
+.settings-name-fit::after {
+  content: attr(data-value) " ";
+  visibility: hidden;
+  white-space: pre;
+  height: 0;
+  overflow: hidden;
+}
+
+.settings-name-input {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  min-width: 0;
+  height: 36px;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  background: none;
   text-align: left;
   color: var(--aubergine);
   caret-color: var(--coral);
-  transition: background-size 200ms ease;
 }
 
 .settings-name-input::placeholder {
@@ -566,7 +587,8 @@ button:disabled {
   font-weight: 500;
 }
 
-.settings-name-input:focus {
+.settings-name-fit:focus-within {
+  background-image: linear-gradient(var(--coral), var(--coral));
   background-size: 100% 2px;
 }
 
