@@ -22,6 +22,7 @@ export interface GunlukNativePlugin {
   purchase(opts: { productId: string }): Promise<{ status: "purchased" | "cancelled" | "pending" | "unknown"; active?: string[] }>;
   restorePurchases(): Promise<{ active: string[] }>;
   getEntitlements(): Promise<{ active: string[] }>;
+  isTestBuild(): Promise<{ test: boolean }>;
   // Ayın mektubu (cihaz içi yapay zekâ)
   monthLetter(opts: { name: string; month: string; notes: string[] }): Promise<{ text: string }>;
   // iCloud yedeği
@@ -133,6 +134,9 @@ class GunlukNativeWeb extends WebPlugin {
   }
   async getEntitlements() {
     return { active: this.active() };
+  }
+  async isTestBuild() {
+    return { test: true }; // tarayıcıda deneme
   }
   async monthLetter({ name }: { name: string; month: string; notes: string[] }) {
     await new Promise((r) => setTimeout(r, 900));

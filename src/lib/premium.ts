@@ -13,6 +13,26 @@ export const PRODUCTS = {
 export type PlanKey = keyof typeof PRODUCTS;
 
 const CACHE_KEY = "premium.v1";
+const TEST_KEY = "premium.test.v1";
+
+/** TestFlight sürümü mü? (App Store sürümünde her zaman false) */
+export async function isTestBuild(): Promise<boolean> {
+  try {
+    return (await GunlukNative.isTestBuild()).test;
+  } catch {
+    return false;
+  }
+}
+
+/** Test anahtarı: yalnızca TestFlight'ta işe yarar; App Store sürümünde yok sayılır. */
+export async function testPremiumOn(): Promise<boolean> {
+  if ((await Preferences.get({ key: TEST_KEY })).value !== "1") return false;
+  return isTestBuild();
+}
+
+export async function setTestPremium(on: boolean): Promise<void> {
+  await Preferences.set({ key: TEST_KEY, value: on ? "1" : "0" });
+}
 
 /** App Store'a ulaşılamazsa (ör. çevrimdışı) gösterilecek fiyatlar. */
 const FALLBACK: Record<PlanKey, StoreProduct> = {
@@ -36,6 +56,7 @@ export async function cachedPremium(): Promise<boolean> {
 }
 
 export async function checkPremium(): Promise<boolean> {
+  if (await testPremiumOn()) return true;
   try {
     const { active } = await GunlukNative.getEntitlements();
     const v = hasPremium(active);

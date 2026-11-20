@@ -32,6 +32,7 @@ public class GunlukNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioRecorderDel
         CAPPluginMethod(name: "purchase", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "restorePurchases", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getEntitlements", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "isTestBuild", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "monthLetter", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "icloudStatus", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "backupToICloud", returnType: CAPPluginReturnPromise),
@@ -528,6 +529,18 @@ extension GunlukNativePlugin {
         Task {
             try? await AppStore.sync()
             call.resolve(["active": await Self.activeProductIds()])
+        }
+    }
+
+    /// TestFlight (ve Xcode) sürümünde true; App Store'dan indirilen sürümde false.
+    /// Test anahtarı yalnızca burada true dönünce görünür.
+    @objc func isTestBuild(_ call: CAPPluginCall) {
+        Task {
+            var test = Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt"
+            if let result = try? await AppTransaction.shared, case .verified(let app) = result {
+                test = app.environment == .sandbox || app.environment == .xcode
+            }
+            call.resolve(["test": test])
         }
     }
 

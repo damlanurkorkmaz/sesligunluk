@@ -178,6 +178,7 @@ export default function App() {
           onDataCleared={refresh}
           onPremium={() => openPaywall({ name: "settings" })}
           onCover={() => setRoute({ name: "cover" })}
+          onPremiumChanged={setPremium}
           onBackup={() => (premium ? setRoute({ name: "backup" }) : openPaywall({ name: "settings" }, "backup"))}
         />
       );

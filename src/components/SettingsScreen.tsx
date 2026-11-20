@@ -12,6 +12,7 @@ import { GunlukNative, type PermissionState } from "@/lib/native";
 import { fromKey, longDate } from "@/lib/dates";
 import { moodInfo } from "@/lib/moods";
 import { APP_NAME } from "@/app.config";
+import { checkPremium, isTestBuild, setTestPremium, testPremiumOn } from "@/lib/premium";
 import { type CoverLook, DAMASK_COLORS, DEFAULT_LOOK, themeById } from "@/lib/themes";
 
 const AI_REASON: Record<string, string> = {
@@ -48,6 +49,7 @@ export function SettingsScreen({
   onPremium,
   onCover,
   onBackup,
+  onPremiumChanged,
 }: {
   entries: Entry[];
   premium?: boolean;
@@ -57,6 +59,7 @@ export function SettingsScreen({
   onPremium?: () => void;
   onCover?: () => void;
   onBackup?: () => void;
+  onPremiumChanged?: (v: boolean) => void;
 }) {
   const [s, setS] = useState<Settings | null>(null);
   const [bio, setBio] = useState<{ type: string; available: boolean } | null>(null);
@@ -65,6 +68,8 @@ export function SettingsScreen({
   const [version, setVersion] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [confirmWipe, setConfirmWipe] = useState(false);
+  const [testBuild, setTestBuild] = useState(false);
+  const [testOn, setTestOn] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -74,6 +79,10 @@ export function SettingsScreen({
       setAi(await GunlukNative.isAIAvailable().catch(() => ({ available: false, reason: "error" })));
       const info = await App.getInfo().catch(() => null);
       setVersion(info ? `${info.version} (${info.build})` : "web");
+      if (await isTestBuild()) {
+        setTestBuild(true);
+        setTestOn(await testPremiumOn());
+      }
     })();
   }, []);
 
@@ -276,6 +285,29 @@ export function SettingsScreen({
             </div>
           </div>
         </section>
+
+        {testBuild && (
+          <section aria-labelledby="h-test">
+            <h2 id="h-test" className="eyebrow" style={{ margin: "0 4px 8px" }}>
+              Test sürümü
+            </h2>
+            <div className="settings-group">
+              <div className="settings-row">
+                <span>Premium&apos;u test et</span>
+                <Switch
+                  on={testOn}
+                  label="Premium'u test et"
+                  onChange={async (v) => {
+                    await setTestPremium(v);
+                    setTestOn(v);
+                    onPremiumChanged?.(await checkPremium());
+                  }}
+                />
+              </div>
+            </div>
+            <p className="settings-hint">Yalnızca TestFlight sürümünde görünür; ödeme yapmadan tüm Premium özellikleri açar. App Store sürümünde bu bölüm yoktur.</p>
+          </section>
+        )}
 
         <section className="col" style={{ alignItems: "center", gap: 6, paddingTop: 8 }}>
           <span className="row small muted" style={{ gap: 6 }}>
