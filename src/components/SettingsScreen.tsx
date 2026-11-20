@@ -50,6 +50,7 @@ export function SettingsScreen({
   onCover,
   onBackup,
   onPremiumChanged,
+  onTestLetter,
 }: {
   entries: Entry[];
   premium?: boolean;
@@ -60,6 +61,7 @@ export function SettingsScreen({
   onCover?: () => void;
   onBackup?: () => void;
   onPremiumChanged?: (v: boolean) => void;
+  onTestLetter?: () => void;
 }) {
   const [s, setS] = useState<Settings | null>(null);
   const [bio, setBio] = useState<{ type: string; available: boolean } | null>(null);
@@ -304,8 +306,12 @@ export function SettingsScreen({
                   }}
                 />
               </div>
+              <button className="settings-row" onClick={onTestLetter} disabled={entries.length === 0}>
+                <span>Bu ayın mektubunu şimdi yaz</span>
+                <span style={{ color: "#B3A2AB", fontSize: 18, lineHeight: 1 }}>›</span>
+              </button>
             </div>
-            <p className="settings-hint">Yalnızca TestFlight sürümünde görünür; ödeme yapmadan tüm Premium özellikleri açar. App Store sürümünde bu bölüm yoktur.</p>
+            <p className="settings-hint">Yalnızca TestFlight sürümünde görünür. Premium anahtarı ödeme yapmadan tüm özellikleri açar; mektup düğmesi ayın bitmesini beklemeden şimdiye kadarki kayıtlarla mektubu yazar. App Store sürümünde bu bölüm yoktur.</p>
           </section>
         )}
 

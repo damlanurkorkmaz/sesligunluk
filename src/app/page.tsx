@@ -14,6 +14,7 @@ import { App as CapApp } from "@capacitor/app";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { loadSettings, saveSettings } from "@/lib/settings";
 import { cachedPremium, checkPremium } from "@/lib/premium";
+import { clearLetter } from "@/lib/letters";
 import { type CoverLook, DEFAULT_LOOK, effectiveLook, lookTint } from "@/lib/themes";
 import { Paywall } from "@/components/Paywall";
 import { CoverPicker } from "@/components/CoverPicker";
@@ -179,6 +180,11 @@ export default function App() {
           onPremium={() => openPaywall({ name: "settings" })}
           onCover={() => setRoute({ name: "cover" })}
           onPremiumChanged={setPremium}
+          onTestLetter={async () => {
+            const month = dayKey().slice(0, 7);
+            await clearLetter(month); // her denemede yeniden yazılsın
+            setRoute({ name: "letter", month, back: { name: "settings" } });
+          }}
           onBackup={() => (premium ? setRoute({ name: "backup" }) : openPaywall({ name: "settings" }, "backup"))}
         />
       );

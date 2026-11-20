@@ -5,7 +5,7 @@ import { Share } from "@capacitor/share";
 import { BackIcon } from "./Icons";
 import type { Entry } from "@/lib/entries";
 import { type Letter, computeInsights, ensureLetter, firstSentence } from "@/lib/letters";
-import { MONTHS } from "@/lib/dates";
+import { MONTHS, dayKey } from "@/lib/dates";
 import { accusative, genitive } from "@/lib/turkish";
 
 /** Ay bitince defterin yazdığı mektup ve ayın içgörüleri. Premium değilse mühürlü. */
@@ -62,7 +62,7 @@ export function MonthLetterScreen({
           {premium && <span className="pw-badge pw-badge--sm">✦ PREMIUM</span>}
         </div>
         <span className="today-month" style={{ marginTop: 14, display: "block" }}>
-          {monthName} defteri kapandı · {ins.count} sayfa
+          {month === dayKey().slice(0, 7) ? `${monthName} defteri · şimdiye kadar ${ins.count} sayfa` : `${monthName} defteri kapandı · ${ins.count} sayfa`}
         </span>
         <h1 className="letter-title">{genitive(monthName)} mektubu</h1>
       </section>

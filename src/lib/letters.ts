@@ -102,6 +102,13 @@ async function loadAll(): Promise<Record<string, Letter>> {
   }
 }
 
+/** Test için: saklanan mektubu sil, bir sonraki açılışta yeniden yazılsın. */
+export async function clearLetter(monthKey: string): Promise<void> {
+  const all = await loadAll();
+  delete all[monthKey];
+  await Preferences.set({ key: KEY, value: JSON.stringify(all) });
+}
+
 export async function getLetter(monthKey: string): Promise<Letter | null> {
   return (await loadAll())[monthKey] ?? null;
 }
