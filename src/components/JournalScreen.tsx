@@ -28,7 +28,13 @@ const WEEKDAYS_LONG = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe",
 const TURN_MS = 420;
 const MAX_ANGLE = 100; // sayfa omurgadan bu kadar döner, sonra görünmez olur
 
-type Mode = { dir: "next" | "prev"; target: "start" | "commit" | "cancel" } | null;
+// `to`: ileri çevirmede alttan çıkacak sayfa (raftan açılışta sayfalar hızla çevrilirken birkaç sayfa atlanır)
+// `ms`: bu çevirmenin süresi
+type Mode = { dir: "next" | "prev"; target: "start" | "commit" | "cancel"; to?: number; ms?: number } | null;
+
+const RIFFLE_HOLD_MS = 1500; // kapak açılır, iç kapak bir an görünür
+const RIFFLE_FAST_MS = 170; // aradaki hızlı çevirmeler
+const RIFFLE_LAST_MS = 400; // son sayfa yavaşça yerine oturur
 
 function daysBetween(a: string, b: string) {
   return Math.round((fromKey(b).getTime() - fromKey(a).getTime()) / 86_400_000);
@@ -282,14 +288,17 @@ function VolumeView({
     const it = pages[i];
     return it && it.kind === "entry" ? it.entry : null;
   };
-  const [idx, setIdx] = useState(() => {
+  // Açılışta gidilecek sayfa: verilen gün ya da en yeni yazılı sayfa (yoksa kapak)
+  const landing = useMemo(() => {
     const i = initialDate ? pages.findIndex((p) => p.kind === "entry" && p.entry.date === initialDate) : -1;
     if (i >= 0) return i;
-    // Açılışta en yeni yazılı sayfa (yoksa kapak)
     let last = 0;
     pages.forEach((p, j) => p.kind === "entry" && (last = j));
     return last;
-  });
+  }, [pages, initialDate]);
+  // Raftan açılınca iç kapaktan başla, sonra sayfalar o güne kadar çevrilsin
+  const [riffleOn] = useState(() => animateOpen && landing > 0 && !(typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches));
+  const [idx, setIdx] = useState(() => (riffleOn ? 0 : landing));
   const [opening, setOpening] = useState(animateOpen);
   const [dx, setDx] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -302,6 +311,33 @@ function VolumeView({
     const t = setTimeout(() => setOpening(false), 1300);
     return () => clearTimeout(t);
   }, [opening]);
+
+  // Kapak açıldıktan sonra sayfaları hızla çevir: en fazla 4 ara durak, son sayfa yavaşça oturur.
+  useEffect(() => {
+    if (!riffleOn) return;
+    const stops = Math.min(4, landing - 1);
+    const seq: number[] = [];
+    for (let k = 1; k <= stops; k++) {
+      const v = Math.round((landing * k) / (stops + 1));
+      if (v > (seq[seq.length - 1] ?? 0) && v < landing) seq.push(v);
+    }
+    seq.push(landing);
+    let cancelled = false;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const run = (i: number) => {
+      if (cancelled || i >= seq.length) return;
+      const to = seq[i];
+      const ms = i === seq.length - 1 ? RIFFLE_LAST_MS : RIFFLE_FAST_MS;
+      setMode({ dir: "next", target: "start", to, ms });
+      requestAnimationFrame(() => requestAnimationFrame(() => !cancelled && setMode({ dir: "next", target: "commit", to, ms })));
+      timers.push(setTimeout(() => run(i + 1), ms + 90)); // önceki çevirme bitip sayfa yerleşince
+    };
+    timers.push(setTimeout(() => run(0), RIFFLE_HOLD_MS));
+    return () => {
+      cancelled = true;
+      timers.forEach(clearTimeout);
+    };
+  }, [riffleOn, landing]);
 
   const stage = useRef<HTMLDivElement>(null);
   const strip = useRef<HTMLDivElement>(null);
@@ -389,10 +425,10 @@ function VolumeView({
   useEffect(() => {
     if (!mode || mode.target === "start") return;
     const t = setTimeout(() => {
-      if (mode.target === "commit") setIdx((i) => i + (mode.dir === "next" ? 1 : -1));
+      if (mode.target === "commit") setIdx((i) => mode.to ?? i + (mode.dir === "next" ? 1 : -1));
       setMode(null);
       setDx(0);
-    }, TURN_MS + 40);
+    }, (mode.ms ?? TURN_MS) + 40);
     return () => clearTimeout(t);
   }, [mode]);
 
@@ -402,7 +438,7 @@ function VolumeView({
   let topIndex = idx;
   let angle = 0;
   if (dir === "next") {
-    underIndex = idx + 1;
+    underIndex = mode?.to ?? idx + 1;
     topIndex = idx;
     angle = mode ? (mode.target === "commit" ? -MAX_ANGLE : 0) : Math.max(-MAX_ANGLE, (dx / w) * 120);
   } else if (dir === "prev") {
@@ -508,7 +544,7 @@ function VolumeView({
             className="book-page book-page--turning"
             style={{
               transform: `perspective(2400px) rotateY(${angle}deg)`,
-              transition: (dragging && !mode) || mode?.target === "start" ? "none" : `transform ${TURN_MS}ms cubic-bezier(.2,.7,.2,1)`,
+              transition: (dragging && !mode) || mode?.target === "start" ? "none" : `transform ${mode?.ms ?? TURN_MS}ms ${mode?.ms && mode.ms < TURN_MS ? "linear" : "cubic-bezier(.2,.7,.2,1)"}`,
             }}
           >
             {renderItem(topIndex)}
