@@ -3,6 +3,7 @@ import Capacitor
 import AVFoundation
 import Speech
 import LocalAuthentication
+import StoreKit
 #if canImport(FoundationModels)
 import FoundationModels
 #endif
@@ -27,7 +28,28 @@ public class GunlukNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioRecorderDel
         CAPPluginMethod(name: "getAudioPath", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "biometryType", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "authenticate", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getProducts", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "purchase", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "restorePurchases", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getEntitlements", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "monthLetter", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "icloudStatus", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "backupToICloud", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "restoreFromICloud", returnType: CAPPluginReturnPromise),
     ]
+
+    private var transactionListener: Task<Void, Never>?
+
+    override public func load() {
+        // Yenilemeler, iadeler ve başka cihazdaki satın almalar burada gelir; doğrulanmış olanları kapat.
+        transactionListener = Task.detached {
+            for await result in Transaction.updates {
+                if case .verified(let transaction) = result {
+                    await transaction.finish()
+                }
+            }
+        }
+    }
 
     private var recorder: AVAudioRecorder?
     private var currentFileName: String?
@@ -404,3 +426,238 @@ enum DaySummarizer {
     }
 }
 #endif
+
+
+// MARK: - Premium (StoreKit 2, sunucusuz)
+
+extension GunlukNativePlugin {
+    static let productIds: [String] = [
+        "com.damlanur.sesligunluk.premium.yearly",
+        "com.damlanur.sesligunluk.premium.monthly",
+        "com.damlanur.sesligunluk.premium.lifetime",
+    ]
+
+    static func days(_ period: Product.SubscriptionPeriod) -> Int {
+        switch period.unit {
+        case .day: return period.value
+        case .week: return period.value * 7
+        case .month: return period.value * 30
+        case .year: return period.value * 365
+        @unknown default: return period.value
+        }
+    }
+
+    static func activeProductIds() async -> [String] {
+        var ids: [String] = []
+        for await result in Transaction.currentEntitlements {
+            if case .verified(let transaction) = result, transaction.revocationDate == nil {
+                ids.append(transaction.productID)
+            }
+        }
+        return ids
+    }
+
+    @objc func getProducts(_ call: CAPPluginCall) {
+        Task {
+            do {
+                let products = try await Product.products(for: Self.productIds)
+                var list: [[String: Any]] = []
+                for product in products {
+                    var item: [String: Any] = [
+                        "id": product.id,
+                        "price": product.displayPrice,
+                        "priceValue": NSDecimalNumber(decimal: product.price).doubleValue,
+                    ]
+                    if let sub = product.subscription {
+                        switch sub.subscriptionPeriod.unit {
+                        case .year: item["period"] = "year"
+                        case .month: item["period"] = "month"
+                        default: item["period"] = "other"
+                        }
+                        if let intro = sub.introductoryOffer, intro.paymentMode == .freeTrial {
+                            item["trialDays"] = Self.days(intro.period)
+                        }
+                        item["eligibleForTrial"] = await sub.isEligibleForIntroOffer
+                    } else {
+                        item["period"] = "lifetime"
+                    }
+                    list.append(item)
+                }
+                call.resolve(["products": list])
+            } catch {
+                call.reject("Ürünler alınamadı: \(error.localizedDescription)", "store_failed", error)
+            }
+        }
+    }
+
+    @objc func purchase(_ call: CAPPluginCall) {
+        guard let productId = call.getString("productId") else {
+            call.reject("productId gerekli", "bad_args")
+            return
+        }
+        Task {
+            do {
+                guard let product = try await Product.products(for: [productId]).first else {
+                    call.reject("Ürün bulunamadı", "not_found")
+                    return
+                }
+                let result = try await product.purchase()
+                switch result {
+                case .success(let verification):
+                    switch verification {
+                    case .verified(let transaction):
+                        await transaction.finish()
+                        call.resolve(["status": "purchased", "active": await Self.activeProductIds()])
+                    case .unverified:
+                        call.reject("Satın alma doğrulanamadı", "unverified")
+                    }
+                case .userCancelled:
+                    call.resolve(["status": "cancelled"])
+                case .pending:
+                    call.resolve(["status": "pending"])
+                @unknown default:
+                    call.resolve(["status": "unknown"])
+                }
+            } catch {
+                call.reject("Satın alınamadı: \(error.localizedDescription)", "purchase_failed", error)
+            }
+        }
+    }
+
+    @objc func restorePurchases(_ call: CAPPluginCall) {
+        Task {
+            try? await AppStore.sync()
+            call.resolve(["active": await Self.activeProductIds()])
+        }
+    }
+
+    @objc func getEntitlements(_ call: CAPPluginCall) {
+        Task {
+            call.resolve(["active": await Self.activeProductIds()])
+        }
+    }
+}
+
+// MARK: - Ayın mektubu (cihaz içi yapay zekâ)
+
+extension GunlukNativePlugin {
+    @objc func monthLetter(_ call: CAPPluginCall) {
+        let name = call.getString("name") ?? ""
+        let month = call.getString("month") ?? ""
+        let notes = call.getArray("notes", String.self) ?? []
+        guard !notes.isEmpty else {
+            call.reject("notes gerekli", "bad_args")
+            return
+        }
+        #if canImport(FoundationModels)
+        if #available(iOS 26.0, *) {
+            Task {
+                do {
+                    // Cihaz içi modelin bağlamı sınırlı: notları kısaltıp toplamı ~3500 karakterde tut.
+                    var joined = ""
+                    for (i, note) in notes.enumerated() {
+                        let line = "\(i + 1). \(note.prefix(240))\n"
+                        if joined.count + line.count > 3500 { break }
+                        joined += line
+                    }
+                    let session = LanguageModelSession(instructions: """
+                    Sen kişisel bir sesli günlüğün kendisisin ve ay sonunda sahibine kısa bir mektup yazıyorsun.
+                    Yalnızca notlarda geçenleri kullan; uydurma, tavsiye verme, teşhis koyma, yargılama.
+                    Sıcak, sade ve samimi ol; "sen" diye hitap et. Türkçe yaz.
+                    Mektup 3 ila 5 cümle olsun, ilk satır "Sevgili <ad>," ile başlasın. İmza ekleme.
+                    """)
+                    let prompt = "Ad: \(name.isEmpty ? "dostum" : name)\nAy: \(month)\nBu ayın günlük notları:\n\(joined)"
+                    let response = try await session.respond(to: prompt)
+                    call.resolve(["text": response.content])
+                } catch {
+                    call.reject("Mektup yazılamadı: \(error.localizedDescription)", "letter_failed", error)
+                }
+            }
+            return
+        }
+        #endif
+        call.reject("Bu cihazda yapay zekâ yok", "ai_unavailable")
+    }
+}
+
+// MARK: - iCloud yedeği (kullanıcının kendi iCloud Drive'ı)
+
+extension GunlukNativePlugin {
+    /// iCloud yetkisi (entitlement) yoksa ya da kullanıcı iCloud'a girmemişse nil döner.
+    private func backupFolder() -> URL? {
+        guard let container = FileManager.default.url(forUbiquityContainerIdentifier: nil) else { return nil }
+        let dir = container.appendingPathComponent("Documents/GunNotu", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+
+    @objc func icloudStatus(_ call: CAPPluginCall) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            let signedIn = FileManager.default.ubiquityIdentityToken != nil
+            let available = signedIn && self.backupFolder() != nil
+            call.resolve(["available": available, "signedIn": signedIn])
+        }
+    }
+
+    @objc func backupToICloud(_ call: CAPPluginCall) {
+        let json = call.getString("json") ?? "{}"
+        let audioFiles = call.getArray("audioFiles", String.self) ?? []
+        DispatchQueue.global(qos: .utility).async {
+            guard let dir = self.backupFolder() else {
+                call.reject("iCloud kullanılamıyor", "icloud_unavailable")
+                return
+            }
+            do {
+                var bytes = 0
+                let data = Data(json.utf8)
+                try data.write(to: dir.appendingPathComponent("entries.json"), options: .atomic)
+                bytes += data.count
+                let audioDir = dir.appendingPathComponent("recordings", isDirectory: true)
+                try FileManager.default.createDirectory(at: audioDir, withIntermediateDirectories: true)
+                for name in audioFiles {
+                    guard let src = try? self.fileURL(name), FileManager.default.fileExists(atPath: src.path) else { continue }
+                    let dst = audioDir.appendingPathComponent(name)
+                    if FileManager.default.fileExists(atPath: dst.path) { continue } // ses dosyaları değişmez
+                    try FileManager.default.copyItem(at: src, to: dst)
+                    bytes += ((try? FileManager.default.attributesOfItem(atPath: src.path)[.size]) as? Int) ?? 0
+                }
+                let date = ISO8601DateFormatter().string(from: Date())
+                call.resolve(["date": date, "bytes": bytes])
+            } catch {
+                call.reject("Yedeklenemedi: \(error.localizedDescription)", "backup_failed", error)
+            }
+        }
+    }
+
+    @objc func restoreFromICloud(_ call: CAPPluginCall) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            guard let dir = self.backupFolder() else {
+                call.reject("iCloud kullanılamıyor", "icloud_unavailable")
+                return
+            }
+            let file = dir.appendingPathComponent("entries.json")
+            // Dosya henüz bu cihaza inmemiş olabilir: indirmeyi başlat ve kısa süre bekle.
+            try? FileManager.default.startDownloadingUbiquitousItem(at: file)
+            var waited = 0
+            while !FileManager.default.fileExists(atPath: file.path) && waited < 20 {
+                Thread.sleep(forTimeInterval: 0.5)
+                waited += 1
+            }
+            guard let data = try? Data(contentsOf: file), let json = String(data: data, encoding: .utf8) else {
+                call.resolve(["json": NSNull(), "date": NSNull()])
+                return
+            }
+            let audioDir = dir.appendingPathComponent("recordings", isDirectory: true)
+            if let names = try? FileManager.default.contentsOfDirectory(atPath: audioDir.path) {
+                for name in names where name.hasSuffix(".m4a") {
+                    guard let dst = try? self.fileURL(name), !FileManager.default.fileExists(atPath: dst.path) else { continue }
+                    let src = audioDir.appendingPathComponent(name)
+                    try? FileManager.default.startDownloadingUbiquitousItem(at: src)
+                    try? FileManager.default.copyItem(at: src, to: dst)
+                }
+            }
+            let modified = (try? FileManager.default.attributesOfItem(atPath: file.path)[.modificationDate]) as? Date
+            call.resolve(["json": json, "date": modified.map { ISO8601DateFormatter().string(from: $0) } ?? NSNull()])
+        }
+    }
+}

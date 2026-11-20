@@ -12,6 +12,7 @@ import { GunlukNative, type PermissionState } from "@/lib/native";
 import { fromKey, longDate } from "@/lib/dates";
 import { moodInfo } from "@/lib/moods";
 import { APP_NAME } from "@/app.config";
+import { type CoverLook, DAMASK_COLORS, DEFAULT_LOOK, themeById } from "@/lib/themes";
 
 const AI_REASON: Record<string, string> = {
   deviceNotEligible: "Bu cihaz Apple Intelligence'ı desteklemiyor",
@@ -38,7 +39,25 @@ function Status({ ok, text }: { ok: boolean | null; text: string }) {
 
 const permText = (p: PermissionState | undefined) => (p === "granted" ? "İzin var" : p === "denied" ? "İzin yok" : "Sorulmadı");
 
-export function SettingsScreen({ entries, onTab, onDataCleared }: { entries: Entry[]; onTab: (t: Tab) => void; onDataCleared: () => void }) {
+export function SettingsScreen({
+  entries,
+  premium = false,
+  look = DEFAULT_LOOK,
+  onTab,
+  onDataCleared,
+  onPremium,
+  onCover,
+  onBackup,
+}: {
+  entries: Entry[];
+  premium?: boolean;
+  look?: CoverLook;
+  onTab: (t: Tab) => void;
+  onDataCleared: () => void;
+  onPremium?: () => void;
+  onCover?: () => void;
+  onBackup?: () => void;
+}) {
   const [s, setS] = useState<Settings | null>(null);
   const [bio, setBio] = useState<{ type: string; available: boolean } | null>(null);
   const [perms, setPerms] = useState<{ microphone: PermissionState; speech: PermissionState } | null>(null);
@@ -128,6 +147,26 @@ export function SettingsScreen({ entries, onTab, onDataCleared }: { entries: Ent
           </p>
         )}
 
+        {premium ? (
+          <div className="premium-on">
+            <span className="pw-badge pw-badge--sm">✦ PREMIUM</span>
+            <span className="small muted">Ayın mektubu, iCloud yedeği ve tüm kapaklar açık.</span>
+          </div>
+        ) : (
+          <button className="premium-card today-cover" onClick={onPremium}>
+            <span className="col" style={{ gap: 4, textAlign: "left", minWidth: 0 }}>
+              <span className="pw-badge pw-badge--sm" style={{ alignSelf: "flex-start" }}>
+                ✦ PREMIUM
+              </span>
+              <strong className="serif" style={{ fontSize: 19, marginTop: 6 }}>
+                Defterin seni daha iyi tanısın
+              </strong>
+              <span style={{ fontSize: 13, color: "rgba(245,239,232,.8)" }}>Ayın mektubu · iCloud yedeği · 9 özel kapak</span>
+            </span>
+            <span className="premium-card-cta">Dene</span>
+          </button>
+        )}
+
         <section aria-labelledby="h-you">
           <h2 id="h-you" className="eyebrow" style={{ margin: "0 4px 8px" }}>Defterin</h2>
           <div className="settings-group">
@@ -153,6 +192,13 @@ export function SettingsScreen({ entries, onTab, onDataCleared }: { entries: Ent
                 <PencilIcon size={15} />
               </span>
             </label>
+            <button className="settings-row" onClick={onCover}>
+              <span>Kapak</span>
+              <span className="row small" style={{ gap: 6, fontWeight: 700 }}>
+                {look.theme === "damask" ? `${DAMASK_COLORS.find((c) => c.id === look.color)?.name ?? "Mürdüm"} deri` : themeById(look.theme).name}
+                <span style={{ color: "#B3A2AB", fontSize: 18, lineHeight: 1 }}>›</span>
+              </span>
+            </button>
           </div>
         </section>
 
@@ -195,6 +241,13 @@ export function SettingsScreen({ entries, onTab, onDataCleared }: { entries: Ent
         <section aria-labelledby="h-data">
           <h2 id="h-data" className="eyebrow" style={{ margin: "0 4px 8px" }}>Verilerin</h2>
           <div className="settings-group">
+            <button className="settings-row" onClick={onBackup}>
+              <span>iCloud yedeği</span>
+              <span className="row small" style={{ gap: 6 }}>
+                {!premium && <span className="pw-badge pw-badge--xs">✦ PREMIUM</span>}
+                <span style={{ color: "#B3A2AB", fontSize: 18, lineHeight: 1 }}>›</span>
+              </span>
+            </button>
             <button className="settings-row" onClick={exportText} disabled={entries.length === 0}>
               <span>Metinleri dışa aktar</span>
               <span className="small muted">{entries.length} kayıt</span>

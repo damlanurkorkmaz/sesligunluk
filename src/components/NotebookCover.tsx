@@ -1,6 +1,8 @@
 "use client";
 
 import { useId } from "react";
+import { CoverArt } from "./CoverArt";
+import { type CoverLook, DEFAULT_LOOK, lookTint, themeById } from "@/lib/themes";
 import { waveColor } from "@/lib/moods";
 
 const RINGS = 12;
@@ -66,16 +68,26 @@ export function NotebookCover({
   height = 320,
   opening = false,
   under,
+  look = DEFAULT_LOOK,
+  sub,
 }: {
   title: string;
   width?: number;
   height?: number;
   opening?: boolean;
   under?: React.ReactNode;
+  look?: CoverLook;
+  sub?: string; // temaya göre isim altında küçük yazı (ör. "Kasım 2026")
 }) {
   const scale = width / 240;
+  const theme = themeById(look.theme);
   return (
-    <div className="nb-cover" style={{ width, height }} role="img" aria-label={`${title} defteri`}>
+    <div
+      className={`nb-cover nb-cover--${theme.id}`}
+      style={{ width, height, "--lt": lookTint(look) } as React.CSSProperties}
+      role="img"
+      aria-label={`${title} defteri`}
+    >
       <div className="nb-stack" />
       <span className="nb-ribbon" />
       {under && (
@@ -87,10 +99,21 @@ export function NotebookCover({
         </div>
       )}
       <div className={`nb-hinge ${opening ? "nb-hinge--open" : ""}`}>
-        <LeatherFace title={title} scale={scale} />
-        <span className="nb-band" />
-        <span className="nb-corner nb-corner--top" aria-hidden="true" />
-        <span className="nb-corner nb-corner--bottom" aria-hidden="true" />
+        {theme.id === "damask" ? (
+          <>
+            <LeatherFace title={title} scale={scale} />
+            <span className="nb-band" />
+            <span className="nb-corner nb-corner--top" aria-hidden="true" />
+            <span className="nb-corner nb-corner--bottom" aria-hidden="true" />
+          </>
+        ) : (
+          <>
+            <div className="nb-art">
+              <CoverArt theme={theme.id} title={title} sub={sub} />
+            </div>
+            <span className="nb-band" style={{ background: theme.band }} />
+          </>
+        )}
       </div>
       <div className="nb-rings" aria-hidden="true">
         {Array.from({ length: RINGS }, (_, i) => (

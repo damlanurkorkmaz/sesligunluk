@@ -6,7 +6,9 @@ import { BackIcon, CalendarIcon, CloseIcon, MicIcon, NextIcon, PencilIcon } from
 import { MonthGrid } from "./MonthGrid";
 import { AudioPlayer } from "./AudioPlayer";
 import { LeatherFace, NotebookCover } from "./NotebookCover";
-import { MoodStrip, Shelf, groupVolumes } from "./Shelf";
+import { MoodStrip, Shelf, groupVolumes, volumeSub, type Volume } from "./Shelf";
+import { CoverArt } from "./CoverArt";
+import { type CoverLook, DEFAULT_LOOK, effectiveLook, lookTint, volumeLook } from "@/lib/themes";
 import { journalTitle } from "@/lib/turkish";
 import type { Entry } from "@/lib/entries";
 import { moodInfo } from "@/lib/moods";
@@ -75,7 +77,7 @@ function Page({ entry, prev, pageNo }: { entry: Entry; prev: Entry | null; pageN
 }
 
 /** Kapağın iç yüzü: ex-libris etiketi gibi defterin künyesi. */
-function CoverInside({ name, year, month, entries }: { name: string; year: number; month: number; entries: Entry[] }) {
+function CoverInside({ name, year, month, entries, onLetter }: { name: string; year: number; month: number; entries: Entry[]; onLetter?: () => void }) {
   const first = entries[0] ? fromKey(entries[0].date) : null;
   return (
     <article className="paper paper--endpaper" aria-label="Defterin kapağının iç yüzü">
@@ -90,6 +92,11 @@ function CoverInside({ name, year, month, entries }: { name: string; year: numbe
           {first ? `${first.getDate()} ${MONTHS[first.getMonth()]}'da başladı · ${entries.length} sayfa` : "Henüz boş"}
         </span>
         <MoodStrip entries={entries} />
+        {onLetter && (
+          <button className="exlibris-letter" onClick={onLetter}>
+            ✉︎ Ayın mektubu
+          </button>
+        )}
       </div>
       <span className="endpaper-hint" aria-hidden="true">
         sayfaları çevir →
@@ -136,6 +143,10 @@ type Item = { kind: "cover" } | { kind: "entry"; entry: Entry; n: number } | { k
 export function JournalScreen({
   entries,
   name = "",
+  look = DEFAULT_LOOK,
+  volumeLooks = {},
+  premium = false,
+  onLetter,
   initialDate,
   onEdit,
   onRecord,
@@ -143,12 +154,20 @@ export function JournalScreen({
 }: {
   entries: Entry[];
   name?: string;
+  look?: CoverLook;
+  volumeLooks?: Record<string, CoverLook>;
+  premium?: boolean;
+  onLetter?: (month: string) => void;
   initialDate?: string;
   onEdit: (date: string) => void;
   onRecord: () => void;
   onTab: (t: Tab) => void;
 }) {
   const volumes = useMemo(() => groupVolumes(entries), [entries]);
+  const thisKey = dayKey().slice(0, 7);
+  const lookOf = (v: Volume) => effectiveLook(volumeLook(volumeLooks, v.key, look, v.key === thisKey), premium);
+  // Biten en son ayın mektubu rafta öne çıkar
+  const letterReady = volumes.find((v) => v.key < thisKey && v.entries.length > 0) ?? null;
   // Sekmeden gelince raf; bir sayfadan geri dönünce doğrudan o ayın defteri.
   const [volumeKey, setVolumeKey] = useState<string | null>(initialDate ? initialDate.slice(0, 7) : null);
   const [openedFromShelf, setOpenedFromShelf] = useState(false);
@@ -186,6 +205,9 @@ export function JournalScreen({
         </header>
         <Shelf
           volumes={volumes}
+          lookOf={lookOf}
+          letterReady={letterReady}
+          onLetter={onLetter}
           onOpen={(k) => {
             setOpenedFromShelf(true);
             setVolumeKey(k);
@@ -200,6 +222,9 @@ export function JournalScreen({
     <VolumeView
       key={volume.key}
       volume={volume}
+      look={lookOf(volume)}
+      volumeIndex={volumes.length - volumes.indexOf(volume)}
+      onLetter={volume.key < thisKey && volume.entries.length > 0 && onLetter ? () => onLetter(volume.key) : undefined}
       allEntries={entries}
       name={name}
       initialDate={initialDate}
@@ -218,6 +243,9 @@ export function JournalScreen({
 
 function VolumeView({
   volume,
+  look,
+  volumeIndex,
+  onLetter,
   allEntries,
   name,
   initialDate,
@@ -229,6 +257,9 @@ function VolumeView({
   onTab,
 }: {
   volume: ReturnType<typeof groupVolumes>[number];
+  look: CoverLook;
+  volumeIndex: number;
+  onLetter?: () => void;
   allEntries: Entry[];
   name: string;
   initialDate?: string;
@@ -393,7 +424,7 @@ function VolumeView({
   function renderItem(i: number) {
     const it = pages[i];
     if (!it) return null;
-    if (it.kind === "cover") return <CoverInside name={name} year={sy} month={sm} entries={volume.entries} />;
+    if (it.kind === "cover") return <CoverInside name={name} year={sy} month={sm} entries={volume.entries} onLetter={onLetter} />;
     if (it.kind === "today") return <TodayBlank onRecord={onRecord} />;
     const prev = i > 0 ? entryAt(i - 1) : null;
     return <Page entry={it.entry} prev={prev} pageNo={it.n} />;
@@ -487,8 +518,14 @@ function VolumeView({
 
         {/* Raftan açılınca kapak omurgadan dönerek açılır */}
         {opening && (
-          <div className="vol-opener" aria-hidden="true">
-            <LeatherFace title={`${MONTHS[sm]} ${sy}`} scale={1.1} />
+          <div className="vol-opener" aria-hidden="true" style={{ "--lt": lookTint(look) } as React.CSSProperties}>
+            {look.theme === "damask" ? (
+              <LeatherFace title={`${MONTHS[sm]} ${sy}`} scale={1.1} />
+            ) : (
+              <div className="nb-art">
+                <CoverArt theme={look.theme} title={`${MONTHS[sm]} ${sy}`} sub={volumeSub(look, volume, volumeIndex)} />
+              </div>
+            )}
           </div>
         )}
 

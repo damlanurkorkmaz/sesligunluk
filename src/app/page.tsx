@@ -13,6 +13,12 @@ import { LockScreen } from "@/components/LockScreen";
 import { App as CapApp } from "@capacitor/app";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { loadSettings, saveSettings } from "@/lib/settings";
+import { cachedPremium, checkPremium } from "@/lib/premium";
+import { type CoverLook, DEFAULT_LOOK, effectiveLook, lookTint } from "@/lib/themes";
+import { Paywall } from "@/components/Paywall";
+import { CoverPicker } from "@/components/CoverPicker";
+import { MonthLetterScreen } from "@/components/MonthLetter";
+import { BackupScreen } from "@/components/BackupScreen";
 import { type Entry, listEntries } from "@/lib/entries";
 import { dayKey } from "@/lib/dates";
 
@@ -22,7 +28,11 @@ type Route =
   | { name: "today" | "settings" }
   | { name: "journal"; date?: string }
   | { name: "record" }
-  | { name: "detail"; date: string; pending: Pending | null; from: "today" | "journal" };
+  | { name: "detail"; date: string; pending: Pending | null; from: "today" | "journal" }
+  | { name: "paywall"; back: Route; reason?: string }
+  | { name: "cover" }
+  | { name: "letter"; month: string; back: Route }
+  | { name: "backup" };
 
 const ONBOARDED_KEY = "onboarded.v1";
 
@@ -35,9 +45,29 @@ export default function App() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [locked, setLocked] = useState(false);
   const [name, setName] = useState("");
+  const [premium, setPremium] = useState(false);
+  const [look, setLook] = useState<CoverLook>(DEFAULT_LOOK);
+  const [volumeLooks, setVolumeLooks] = useState<Record<string, CoverLook>>({});
+  // Kapak seçicide Premium bir kapak seçilip satış ekranına gidilince seçim kaybolmasın
+  const [coverDraft, setCoverDraft] = useState<CoverLook | null>(null);
 
   const refresh = useCallback(async () => setEntries(await listEntries()), []);
-  const refreshSettings = useCallback(async () => setName((await loadSettings()).name), []);
+  const refreshSettings = useCallback(async () => {
+    const st = await loadSettings();
+    setName(st.name);
+    setLook(st.look);
+    setVolumeLooks(st.volumeLooks);
+  }, []);
+
+  /** Bu ayın defteri hangi kapaktaysa kaydet: ay bitince rafta o kapakla durur. */
+  const rememberMonthLook = useCallback(async () => {
+    const st = await loadSettings();
+    const key = dayKey().slice(0, 7);
+    if (JSON.stringify(st.volumeLooks[key]) === JSON.stringify(st.look)) return;
+    const next = { ...st, volumeLooks: { ...st.volumeLooks, [key]: st.look } };
+    await saveSettings(next);
+    setVolumeLooks(next.volumeLooks);
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -45,10 +75,15 @@ export default function App() {
       await refresh();
       const st = await loadSettings();
       setName(st.name);
+      setLook(st.look);
+      setVolumeLooks(st.volumeLooks);
+      setPremium(await cachedPremium());
+      void checkPremium().then(setPremium);
+      void rememberMonthLook();
       if (st.lockOn) setLocked(true);
       setRoute(value ? { name: "today" } : { name: "onboarding" });
     })();
-  }, [refresh]);
+  }, [refresh, rememberMonthLook]);
 
   // Hatırlatma bildirimine dokununca doğrudan Kayıt ekranı (kilitliyse kilit açılınca).
   useEffect(() => {
@@ -76,13 +111,22 @@ export default function App() {
     return () => remove?.();
   }, []);
 
+  // Seçili kapağın tonu tüm deri yüzeylere (Bugün başlığı, sayfa çerçevesi) yayılır.
+  const shownLook = effectiveLook(look, premium);
+  const tint = lookTint(shownLook);
+  useEffect(() => {
+    document.documentElement.style.setProperty("--lt", tint);
+  }, [tint]);
+
+  const openPaywall = (back: Route, reason?: string) => setRoute({ name: "paywall", back, reason });
+
   const prompt = PROMPTS[new Date().getDate() % PROMPTS.length];
   const goTab = (t: Tab) => {
     if (t === "today") void refreshSettings(); // Ayarlar'da isim değişmiş olabilir
     setRoute(t === "journal" ? { name: "journal" } : { name: t });
   };
 
-  if (locked && route.name !== "loading" && route.name !== "onboarding") return <LockScreen name={name} onUnlock={() => setLocked(false)} />;
+  if (locked && route.name !== "loading" && route.name !== "onboarding") return <LockScreen name={name} look={shownLook} onUnlock={() => setLocked(false)} />;
 
   switch (route.name) {
     case "loading":
@@ -114,6 +158,10 @@ export default function App() {
           key={route.date ?? "latest"}
           entries={entries}
           name={name}
+          look={shownLook}
+          volumeLooks={volumeLooks}
+          premium={premium}
+          onLetter={(month) => setRoute({ name: "letter", month, back: { name: "journal" } })}
           initialDate={route.date}
           onEdit={(date) => setRoute({ name: "detail", date, pending: null, from: "journal" })}
           onRecord={() => setRoute({ name: "record" })}
@@ -121,7 +169,68 @@ export default function App() {
         />
       );
     case "settings":
-      return <SettingsScreen entries={entries} onTab={goTab} onDataCleared={refresh} />;
+      return (
+        <SettingsScreen
+          entries={entries}
+          premium={premium}
+          look={shownLook}
+          onTab={goTab}
+          onDataCleared={refresh}
+          onPremium={() => openPaywall({ name: "settings" })}
+          onCover={() => setRoute({ name: "cover" })}
+          onBackup={() => (premium ? setRoute({ name: "backup" }) : openPaywall({ name: "settings" }, "backup"))}
+        />
+      );
+    case "paywall":
+      return (
+        <Paywall
+          name={name}
+          look={shownLook}
+          reason={route.reason}
+          onClose={() => setRoute(route.back)}
+          onUnlocked={() => {
+            setPremium(true);
+            setRoute(route.back);
+          }}
+        />
+      );
+    case "cover":
+      return (
+        <CoverPicker
+          name={name}
+          premium={premium}
+          initial={coverDraft ?? look}
+          onBack={() => {
+            setCoverDraft(null);
+            setRoute({ name: "settings" });
+          }}
+          onLocked={(l) => {
+            setCoverDraft(l);
+            openPaywall({ name: "cover" }, "cover");
+          }}
+          onSave={async (l) => {
+            setCoverDraft(null);
+            const st = await loadSettings();
+            await saveSettings({ ...st, look: l });
+            setLook(l);
+            await rememberMonthLook();
+            setRoute({ name: "settings" });
+          }}
+        />
+      );
+    case "letter":
+      return (
+        <MonthLetterScreen
+          month={route.month}
+          entries={entries}
+          name={name}
+          premium={premium}
+          onBack={() => setRoute(route.back)}
+          onUnlock={() => openPaywall({ name: "letter", month: route.month, back: route.back }, "letter")}
+        />
+      );
+    case "backup":
+      return <BackupScreen entries={entries} onBack={() => setRoute({ name: "settings" })} onRestored={refresh} />;
     case "record":
       return (
         <RecordScreen

@@ -4,6 +4,8 @@ import { NotebookCover } from "./NotebookCover";
 import type { Entry } from "@/lib/entries";
 import { MOODS } from "@/lib/moods";
 import { MONTHS } from "@/lib/dates";
+import { genitive } from "@/lib/turkish";
+import { type CoverLook, lookTint, roman, themeById } from "@/lib/themes";
 
 export interface Volume {
   key: string; // YYYY-MM
@@ -41,15 +43,35 @@ export function MoodStrip({ entries, vertical = false }: { entries: Entry[]; ver
   );
 }
 
-export function Shelf({ volumes, onOpen }: { volumes: Volume[]; onOpen: (key: string) => void }) {
+/** Cildin kapağında isim altı yazısı: ansiklopedide cilt numarası, diğerlerinde ay. */
+export function volumeSub(look: CoverLook, v: { year: number; month: number }, index: number): string {
+  if (look.theme === "ansiklopedi") return `Cilt ${roman(index)}`;
+  if (look.theme === "artdeco") return roman(v.year);
+  return `${MONTHS[v.month]} ${v.year}`;
+}
+
+export function Shelf({
+  volumes,
+  onOpen,
+  lookOf,
+  letterReady,
+  onLetter,
+}: {
+  volumes: Volume[];
+  onOpen: (key: string) => void;
+  lookOf: (v: Volume) => CoverLook;
+  letterReady?: Volume | null;
+  onLetter?: (key: string) => void;
+}) {
   const [current, ...past] = volumes;
+  const curLook = lookOf(current);
   const totalPages = volumes.reduce((a, v) => a + v.entries.length, 0);
 
   return (
     <div className="shelf">
       <section className="shelf-hero">
         <button className="shelf-hero-book" onClick={() => onOpen(current.key)} aria-label={`${MONTHS[current.month]} ${current.year} defterini aç`}>
-          <NotebookCover title={`${MONTHS[current.month]} ${current.year}`} width={190} height={254} />
+          <NotebookCover title={`${MONTHS[current.month]} ${current.year}`} width={190} height={254} look={curLook} sub={volumeSub(curLook, current, volumes.length)} />
         </button>
         <div className="shelf-hero-info">
           <div className="col" style={{ gap: 4, minWidth: 0, flex: 1 }}>
@@ -61,6 +83,21 @@ export function Shelf({ volumes, onOpen }: { volumes: Volume[]; onOpen: (key: st
           </button>
         </div>
       </section>
+
+      {letterReady && onLetter && (
+        <button className="shelf-letter" onClick={() => onLetter(letterReady.key)}>
+          <span className="shelf-letter-seal" aria-hidden="true">
+            ✦
+          </span>
+          <span className="col" style={{ gap: 2, minWidth: 0, textAlign: "left" }}>
+            <strong>{genitive(MONTHS[letterReady.month])} mektubu hazır</strong>
+            <span className="small muted">Defterin o ayı senin için okudu.</span>
+          </span>
+          <span aria-hidden="true" style={{ marginLeft: "auto", color: "var(--muted)" }}>
+            ›
+          </span>
+        </button>
+      )}
 
       <section className="shelf-rack" aria-label="Geçmiş defterler">
         <div className="shelf-rack-head">
@@ -77,13 +114,22 @@ export function Shelf({ volumes, onOpen }: { volumes: Volume[]; onOpen: (key: st
               <p className="shelf-empty">Ay bitince bu defter lastiğiyle kapanıp rafa kalkar, yenisi başlar.</p>
             </>
           ) : (
-            past.map((v) => (
-              <button key={v.key} className="spine leather" onClick={() => onOpen(v.key)} aria-label={`${MONTHS[v.month]} ${v.year} defteri, ${v.entries.length} sayfa`}>
-                <MoodStrip entries={v.entries} vertical />
-                <span className="spine-title">{MONTHS[v.month]}</span>
-                <span className="spine-year">{String(v.year).slice(2)}</span>
-              </button>
-            ))
+            past.map((v, i) => {
+              const look = lookOf(v);
+              return (
+                <button
+                  key={v.key}
+                  className={`spine leather spine--${themeById(look.theme).id}`}
+                  style={{ "--lt": lookTint(look) } as React.CSSProperties}
+                  onClick={() => onOpen(v.key)}
+                  aria-label={`${MONTHS[v.month]} ${v.year} defteri, ${v.entries.length} sayfa`}
+                >
+                  <MoodStrip entries={v.entries} vertical />
+                  <span className="spine-title">{look.theme === "ansiklopedi" ? `${roman(volumes.length - 1 - i)} · ${MONTHS[v.month]}` : MONTHS[v.month]}</span>
+                  <span className="spine-year">{String(v.year).slice(2)}</span>
+                </button>
+              );
+            })
           )}
         </div>
         <div className="shelf-plank" aria-hidden="true" />

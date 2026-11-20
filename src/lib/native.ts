@@ -17,6 +17,26 @@ export interface GunlukNativePlugin {
   getAudioPath(opts: { fileName: string }): Promise<{ path: string }>;
   biometryType(): Promise<{ type: "faceID" | "touchID" | "passcode" | "none"; available: boolean }>;
   authenticate(opts: { reason?: string }): Promise<{ success: boolean }>;
+  // Premium (StoreKit 2)
+  getProducts(): Promise<{ products: StoreProduct[] }>;
+  purchase(opts: { productId: string }): Promise<{ status: "purchased" | "cancelled" | "pending" | "unknown"; active?: string[] }>;
+  restorePurchases(): Promise<{ active: string[] }>;
+  getEntitlements(): Promise<{ active: string[] }>;
+  // Ayın mektubu (cihaz içi yapay zekâ)
+  monthLetter(opts: { name: string; month: string; notes: string[] }): Promise<{ text: string }>;
+  // iCloud yedeği
+  icloudStatus(): Promise<{ available: boolean; signedIn: boolean }>;
+  backupToICloud(opts: { json: string; audioFiles: string[] }): Promise<{ date: string; bytes: number }>;
+  restoreFromICloud(): Promise<{ json: string | null; date: string | null }>;
+}
+
+export interface StoreProduct {
+  id: string;
+  price: string; // yerelleştirilmiş, ör. "499,99 TL"
+  priceValue: number;
+  period: "year" | "month" | "lifetime" | "other";
+  trialDays?: number;
+  eligibleForTrial?: boolean;
 }
 
 /**
@@ -86,6 +106,50 @@ class GunlukNativeWeb extends WebPlugin {
   async authenticate() {
     await new Promise((r) => setTimeout(r, 900)); // Face ID'nin süresini taklit et
     return { success: true };
+  }
+
+  // ---- Premium taklidi: tarayıcıda localStorage'daki "mock.premium" ile ----
+  async getProducts() {
+    const p = (id: string, price: string, priceValue: number, period: StoreProduct["period"], trialDays?: number): StoreProduct => ({ id, price, priceValue, period, trialDays, eligibleForTrial: !!trialDays });
+    return {
+      products: [
+        p("com.damlanur.sesligunluk.premium.yearly", "499,99 TL", 499.99, "year", 14),
+        p("com.damlanur.sesligunluk.premium.monthly", "99,99 TL", 99.99, "month"),
+        p("com.damlanur.sesligunluk.premium.lifetime", "1.299,99 TL", 1299.99, "lifetime"),
+      ],
+    };
+  }
+  private active(): string[] {
+    const v = typeof localStorage !== "undefined" ? localStorage.getItem("mock.premium") : null;
+    return v ? [v] : [];
+  }
+  async purchase({ productId }: { productId: string }) {
+    await new Promise((r) => setTimeout(r, 600));
+    localStorage.setItem("mock.premium", productId);
+    return { status: "purchased" as const, active: this.active() };
+  }
+  async restorePurchases() {
+    return { active: this.active() };
+  }
+  async getEntitlements() {
+    return { active: this.active() };
+  }
+  async monthLetter({ name }: { name: string; month: string; notes: string[] }) {
+    await new Promise((r) => setTimeout(r, 900));
+    return {
+      text: `Sevgili ${name || "dostum"},\nBu ay bana sık sık Elif'ten ve akşam yürüyüşlerinden bahsettin. Yoğun günlerin oldu ama her seferinde ertesi gün daha hafif konuştun. Kendine ayırdığın o kısa yürüyüşler, ayın en sakin anları gibiydi.`,
+    };
+  }
+  async icloudStatus() {
+    return { available: true, signedIn: true };
+  }
+  async backupToICloud({ json }: { json: string; audioFiles: string[] }) {
+    await new Promise((r) => setTimeout(r, 700));
+    localStorage.setItem("mock.icloud", json);
+    return { date: new Date().toISOString(), bytes: json.length };
+  }
+  async restoreFromICloud() {
+    return { json: localStorage.getItem("mock.icloud"), date: null };
   }
 }
 

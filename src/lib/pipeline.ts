@@ -1,5 +1,6 @@
 import { GunlukNative } from "./native";
 import { type Entry, getEntry, saveEntry } from "./entries";
+import { autoBackup } from "./backup";
 
 export type Step = "transcribing" | "summarizing" | "saving" | "done";
 
@@ -86,6 +87,7 @@ export async function processRecording(
     createdAt: previous?.createdAt ?? now,
     updatedAt: now,
   });
+  void autoBackup(); // Premium + otomatik yedek açıksa sessizce iCloud'a
   // Aynı gün yeniden kaydedildiyse eski sesi sil.
   if (previous && previous.fileName !== fileName) {
     await GunlukNative.deleteAudio({ fileName: previous.fileName }).catch(() => undefined);

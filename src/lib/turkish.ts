@@ -23,3 +23,20 @@ export function genitive(name: string): string {
 export function journalTitle(name: string | undefined): string {
   return name?.trim() ? `${genitive(name)} günlüğü` : "Günlüğüm";
 }
+
+/** Özel isme belirtme (-i) hâli eki: Kasım'ı, Ekim'i, Ağustos'u, Eylül'ü. */
+export function accusative(name: string): string {
+  const n = name.trim();
+  if (!n) return "";
+  const lower = n.toLocaleLowerCase("tr");
+  const vowels = "aeıioöuü";
+  let last = "";
+  for (let i = lower.length - 1; i >= 0; i--) {
+    if (vowels.includes(lower[i])) {
+      last = lower[i];
+      break;
+    }
+  }
+  const suffix = { a: "ı", ı: "ı", e: "i", i: "i", o: "u", u: "u", ö: "ü", ü: "ü" }[last] ?? "i";
+  return `${n}'${vowels.includes(lower[lower.length - 1]) ? "y" : ""}${suffix}`;
+}
