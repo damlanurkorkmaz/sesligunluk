@@ -536,7 +536,7 @@ button:disabled {
   min-width: 0;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 8px;
   color: #a8949e;
 }
@@ -546,17 +546,16 @@ button:disabled {
   appearance: none;
   flex: 1;
   min-width: 0;
-  max-width: 190px;
   height: 36px;
   padding: 0;
   border: 0;
   border-radius: 0;
   outline: none;
-  background: linear-gradient(var(--coral), var(--coral)) right bottom / 0 2px no-repeat;
+  background: linear-gradient(var(--coral), var(--coral)) left bottom / 0 2px no-repeat;
   font: inherit;
   font-size: 16px;
   font-weight: 700;
-  text-align: right;
+  text-align: left;
   color: var(--aubergine);
   caret-color: var(--coral);
   transition: background-size 200ms ease;
