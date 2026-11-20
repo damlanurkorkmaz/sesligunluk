@@ -3321,10 +3321,15 @@ button:disabled {
 }
 
 /* ================= Yedek ================= */
+.backup-screen {
+  /* Düğmeler ana ekran çubuğunun altında kalmasın */
+  padding-bottom: calc(var(--safe-bottom) + 28px);
+}
+
 .backup-hero {
   position: relative;
-  height: 200px;
-  margin-top: 6px;
+  height: 172px;
+  margin-top: 0;
   display: flex;
   justify-content: center;
 }
@@ -3336,9 +3341,9 @@ button:disabled {
 
 .backup-book {
   position: absolute;
-  top: 98px;
-  width: 72px;
-  height: 96px;
+  top: 86px;
+  width: 60px;
+  height: 80px;
   border-radius: 4px 9px 9px 4px;
   transform: rotate(-4deg);
 }

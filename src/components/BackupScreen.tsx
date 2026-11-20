@@ -66,7 +66,7 @@ export function BackupScreen({ entries, onBack, onRestored }: { entries: Entry[]
   const sizeLabel = `${entries.length} sayfa`;
 
   return (
-    <main className="screen">
+    <main className="screen backup-screen">
       <header className="pad row" style={{ gap: 10 }}>
         <button className="icon-btn" onClick={onBack} aria-label="Geri">
           <BackIcon />
@@ -127,7 +127,7 @@ export function BackupScreen({ entries, onBack, onRestored }: { entries: Entry[]
             <Switch on={s?.backupAudio ?? true} label="Sesleri de yedekle" onChange={(v) => void update({ backupAudio: v })} />
           </div>
         </div>
-        <p className="settings-hint">Otomatik yedek, her yeni sayfadan sonra çalışır. Yeni telefonda aynı Apple hesabıyla &quot;Yedekten geri yükle&quot;ye dokun.</p>
+        <p className="settings-hint">Otomatik yedek, her yeni sayfadan sonra çalışır. Yeni telefonda aynı Apple hesabıyla &quot;Geri yükle&quot;ye dokun.</p>
 
         {notice && (
           <p className="notice" role="status" style={{ margin: "8px 0 0" }}>
@@ -139,11 +139,10 @@ export function BackupScreen({ entries, onBack, onRestored }: { entries: Entry[]
             {busy ? "Bekle…" : "Şimdi yedekle"}
           </button>
           <button className="btn btn--ghost" style={{ flex: 1 }} onClick={runRestore} disabled={busy || !!unavailable}>
-            Yedekten geri yükle
+            Geri yükle
           </button>
         </div>
       </div>
-      <div className="grow" />
     </main>
   );
 }
