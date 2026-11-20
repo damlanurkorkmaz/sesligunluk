@@ -78,7 +78,14 @@ export function NotebookCover({
     <div className="nb-cover" style={{ width, height }} role="img" aria-label={`${title} defteri`}>
       <div className="nb-stack" />
       <span className="nb-ribbon" />
-      {under && <div className="nb-under">{under}</div>}
+      {under && (
+        // Kapağın altı: deri arka kapağın üstünde duran ilk sayfa (giriş adımlarındaki açık defterle aynı görünüm)
+        <div className="nb-under nb-under--book leather">
+          <div className="nb-under-page">
+            <div className="paper">{under}</div>
+          </div>
+        </div>
+      )}
       <div className={`nb-hinge ${opening ? "nb-hinge--open" : ""}`}>
         <LeatherFace title={title} scale={scale} />
         <span className="nb-band" />

@@ -2597,6 +2597,39 @@ button:disabled {
   padding-bottom: 18px;
 }
 
+/* ================= Kapaktan ilk sayfaya kesintisiz geçiş ================= */
+/* Defter yaklaşırken çevresindeki öğeler beklemeden, yumuşakça belirir */
+.onb-zooming .onb-reveal {
+  animation: onb-reveal 650ms ease both;
+  animation-delay: 380ms;
+}
+
+.onb-zooming .onb-reveal--late {
+  animation-delay: 620ms;
+}
+
+@keyframes onb-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.nb-under--book {
+  inset: 0;
+  z-index: 0;
+  isolation: isolate; /* sayfanın marj çizgisi ve kıvrık köşesi kapağın üstüne taşmasın */
+  border-radius: 6px 16px 16px 6px;
+}
+
+.nb-under-page {
+  position: absolute;
+  top: 6px;
+  left: 15px;
+  right: 8px;
+  bottom: 8px;
+}
+
 /* ================= Antika defter ================= */
 :root {
   --paper-sheet: #fbf4e6;

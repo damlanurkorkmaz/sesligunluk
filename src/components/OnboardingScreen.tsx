@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { CoverScene } from "./NotebookCover";
 import { BackIcon, LockIcon, MicIcon, PencilIcon } from "./Icons";
 import { GunlukNative } from "@/lib/native";
@@ -11,7 +11,8 @@ import { MONTHS } from "@/lib/dates";
 
 type Step = "cover" | "opening" | "name" | "reminder" | "privacy";
 const STEP_INDEX: Partial<Record<Step, number>> = { name: 0, reminder: 1, privacy: 2 };
-const OPEN_MS = 1750; // kapak yavaşça açılır, ardından sayfa yumuşakça belirir
+const OPEN_MS = 900; // kapak 90°'yi geçip görünmez olduğu an sayfa yakınlaşmaya başlar
+const ZOOM_MS = 950; // açılan defter, isim sayfasının yerine yavaşça yaklaşıp oturur
 
 const PhoneIcon = () => (
   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -85,16 +86,58 @@ export function OnboardingScreen({ onDone }: { onDone: (s: Settings) => void }) 
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const reduceMotion = useRef(false);
+  // Kapaktan isim sayfasına kesintisiz geçiş: açılan defterin ekrandaki yeri
+  const fromRect = useRef<DOMRect | null>(null);
+  const sceneRef = useRef<HTMLDivElement>(null);
+  const pageRef = useRef<HTMLDivElement>(null);
+  const [zooming, setZooming] = useState(false);
 
   useEffect(() => {
     reduceMotion.current = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
   }, []);
 
-  // Kapak açılma animasyonu bitince ilk sayfaya geç.
+  // Kapak açılınca açılan defterin yerini ölç ve isim sayfasına geç.
   useEffect(() => {
     if (step !== "opening") return;
-    const t = setTimeout(() => setStep("name"), reduceMotion.current ? 0 : OPEN_MS);
+    const t = setTimeout(
+      () => {
+        fromRect.current = sceneRef.current?.querySelector(".nb-cover")?.getBoundingClientRect() ?? null;
+        setStep("name");
+      },
+      reduceMotion.current ? 0 : OPEN_MS,
+    );
     return () => clearTimeout(t);
+  }, [step]);
+
+  // İsim sayfası, açılan defterin olduğu yerden ve boyuttan başlar; yavaşça son haline yaklaşır.
+  useLayoutEffect(() => {
+    if (step !== "name") return;
+    const from = fromRect.current;
+    fromRect.current = null;
+    const el = pageRef.current;
+    if (!from || !el || reduceMotion.current) return;
+    const to = el.getBoundingClientRect();
+    const scale = from.width / to.width;
+    el.style.transformOrigin = "top left";
+    el.style.transition = "none";
+    el.style.transform = `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${scale})`;
+    setZooming(true);
+    const raf = requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        el.style.transition = `transform ${ZOOM_MS}ms cubic-bezier(0.33, 0.1, 0.2, 1)`;
+        el.style.transform = "none";
+      }),
+    );
+    const t = setTimeout(() => {
+      el.style.transition = "";
+      el.style.transform = "";
+      el.style.transformOrigin = "";
+      setZooming(false);
+    }, ZOOM_MS + 60);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(t);
+    };
   }, [step]);
 
   const today = new Date();
@@ -126,14 +169,16 @@ export function OnboardingScreen({ onDone }: { onDone: (s: Settings) => void }) 
   // ---------- 1 · Kapak ----------
   if (step === "cover" || step === "opening") {
     const firstPage = (
-      <div style={{ padding: "22px 16px 0 46px" }}>
-        <span className="eyebrow">İlk sayfa</span>
-        <div style={{ fontFamily: "var(--font-serif)", fontSize: 22, fontWeight: 600, marginTop: 6 }}>Bu defter kimin?</div>
+      <div style={{ padding: "18px 12px 0 40px" }}>
+        <span className="eyebrow" style={{ fontSize: 9 }}>İlk sayfa</span>
+        <div style={{ fontFamily: "var(--font-serif)", fontSize: 18, fontWeight: 600, marginTop: 4, whiteSpace: "nowrap" }}>Bu defter kimin?</div>
       </div>
     );
     return (
       <main className="screen pad" style={{ paddingBottom: "calc(var(--safe-bottom) + 24px)", overflow: "hidden" }}>
-        <CoverScene title="Günlüğüm" opening={step === "opening"} under={firstPage} />
+        <div ref={sceneRef}>
+          <CoverScene title="Günlüğüm" opening={step === "opening"} under={firstPage} />
+        </div>
         <div className="col" style={{ gap: 12, textAlign: "center", alignItems: "center", opacity: step === "opening" ? 0 : 1, transition: "opacity 500ms ease" }}>
           <h1 className="hero" style={{ fontSize: 30 }}>
             Gününü 60 saniyede anlat.
@@ -175,12 +220,15 @@ export function OnboardingScreen({ onDone }: { onDone: (s: Settings) => void }) 
   // ---------- 2 · İsim ----------
   if (step === "name") {
     return (
-      <main className="screen pad step-enter" style={{ paddingBottom: "calc(var(--safe-bottom) + 24px)" }}>
-        <StepBar step={step} onBack={() => setStep("cover")} onSkip={() => setStep("reminder")} />
-        <div style={{ marginTop: 24 }}>
+      <main className={`screen pad ${zooming ? "onb-zooming" : ""}`} style={{ paddingBottom: "calc(var(--safe-bottom) + 24px)", overflow: "hidden" }}>
+        <div className="onb-reveal">
+          <StepBar step={step} onBack={() => setStep("cover")} onSkip={() => setStep("reminder")} />
+        </div>
+        <div style={{ marginTop: 24 }} ref={pageRef}>
           <OpenPage height={440}>
             <span className="eyebrow">İlk sayfa</span>
             <h1 style={{ margin: "6px 0 0", fontFamily: "var(--font-serif)", fontSize: 26, fontWeight: 600 }}>Bu defter kimin?</h1>
+            <div className="onb-reveal onb-reveal--late">
             <label htmlFor="name" className="small muted" style={{ marginTop: 22, fontWeight: 600 }}>
               Adın
             </label>
@@ -200,14 +248,15 @@ export function OnboardingScreen({ onDone }: { onDone: (s: Settings) => void }) 
               <div style={{ fontFamily: "var(--font-serif)", fontSize: 22, fontWeight: 600 }}>{journalTitle(name)}</div>
               <div style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 14, color: "var(--muted)" }}>{started}</div>
             </div>
+            </div>
             <div className="paper-text" style={{ minHeight: 64 }} />
           </OpenPage>
         </div>
-        <p className="small muted" style={{ textAlign: "center", margin: "14px 4px 0", lineHeight: 1.45 }}>
+        <p className="small muted onb-reveal onb-reveal--late" style={{ textAlign: "center", margin: "14px 4px 0", lineHeight: 1.45 }}>
           Adın sadece bu telefonda saklanır; seni adınla selamlarız.
         </p>
         <div className="grow" />
-        <button className="btn btn--primary" onClick={() => setStep("reminder")}>
+        <button className="btn btn--primary onb-reveal onb-reveal--late" onClick={() => setStep("reminder")}>
           Devam
         </button>
       </main>
