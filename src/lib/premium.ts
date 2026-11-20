@@ -15,8 +15,15 @@ export type PlanKey = keyof typeof PRODUCTS;
 const CACHE_KEY = "premium.v1";
 const TEST_KEY = "premium.test.v1";
 
+/**
+ * Test araçları (Premium'u test et, mektubu şimdi yaz). App Store incelemesi de sandbox'ta
+ * çalıştığı için yayın sürümünde KAPALI olmalı. Tekrar denemek için true yap.
+ */
+export const TEST_TOOLS_ENABLED = false;
+
 /** TestFlight sürümü mü? (App Store sürümünde her zaman false) */
 export async function isTestBuild(): Promise<boolean> {
+  if (!TEST_TOOLS_ENABLED) return false;
   try {
     return (await GunlukNative.isTestBuild()).test;
   } catch {
