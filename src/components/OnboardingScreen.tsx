@@ -229,7 +229,7 @@ export function OnboardingScreen({ onDone }: { onDone: (s: Settings) => void }) 
             <span className="eyebrow">İlk sayfa</span>
             <h1 style={{ margin: "6px 0 0", fontFamily: "var(--font-serif)", fontSize: 26, fontWeight: 600 }}>Bu defter kimin?</h1>
             <div className="onb-reveal onb-reveal--late">
-            <label htmlFor="name" className="small muted" style={{ marginTop: 22, fontWeight: 600 }}>
+            <label htmlFor="name" className="name-label">
               Adın
             </label>
             <input

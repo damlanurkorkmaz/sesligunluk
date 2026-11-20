@@ -1188,22 +1188,51 @@ button:disabled {
   border: 1.5px solid var(--aubergine);
 }
 
+.name-label {
+  display: block;
+  margin-top: 26px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #8a7680;
+}
+
+/* Defter satırına yazılıyormuş gibi: form kutusu değil, kâğıttaki çizgi */
 .name-input {
-  margin-top: 4px;
-  border: 0;
-  border-bottom: 2px solid var(--aubergine);
-  background: transparent;
-  font-family: var(--font-serif);
-  font-size: 24px;
-  color: var(--aubergine);
-  padding: 4px 0 6px;
-  border-radius: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
   width: 100%;
+  height: 46px;
+  margin-top: 2px;
+  padding: 0 2px;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  box-shadow: none;
+  background:
+    linear-gradient(var(--paper-rule, #e3d5d9), var(--paper-rule, #e3d5d9)) left bottom / 100% 1.5px no-repeat,
+    transparent;
+  font-family: var(--font-serif);
+  font-size: 26px;
+  font-weight: 500;
+  line-height: 46px;
+  color: var(--aubergine);
+  caret-color: var(--coral);
+  transition: background-size 200ms ease;
+}
+
+.name-input::placeholder {
+  color: #b3a2ab;
+  font-style: italic;
+  font-weight: 400;
 }
 
 .name-input:focus {
-  outline: none;
-  border-bottom-color: var(--coral);
+  background:
+    linear-gradient(var(--coral), var(--coral)) left bottom / 100% 2px no-repeat,
+    transparent;
 }
 
 @media (prefers-reduced-motion: reduce) {
