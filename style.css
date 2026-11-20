@@ -1,0 +1,37 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: #FAF7F2;
+  color: #382A39;
+  font-family: "Plus Jakarta Sans", -apple-system, system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+}
+main { max-width: 640px; margin: 0 auto; padding: 56px 24px 40px; }
+.label {
+  font-size: 12px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.06em; color: #6E6070; margin: 0 0 8px;
+}
+h1 { font-size: 34px; font-weight: 800; line-height: 1.12; letter-spacing: -0.02em; margin: 0 0 16px; }
+h2 { font-size: 20px; font-weight: 800; margin: 0 0 10px; }
+p, li { color: #4A3A4B; }
+.lead { font-size: 17px; margin: 0 0 32px; }
+.muted { color: #6E6070; font-size: 14px; margin: 0 0 32px; }
+section { margin: 0 0 32px; }
+ul { padding-left: 20px; }
+li { margin-bottom: 6px; }
+a { color: #382A39; text-decoration-color: #B9A8C9; text-underline-offset: 3px; }
+.card { background: #EAE3EF; border-radius: 20px; padding: 24px; }
+.card p { margin-top: 0; }
+.button {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 56px; padding: 0 24px; border-radius: 16px;
+  background: #D99182; color: #382A39; font-weight: 700; text-decoration: none;
+}
+details { background: #FFFFFF; border: 1px solid #ECE6DE; border-radius: 16px; padding: 16px 20px; margin-bottom: 10px; }
+summary { font-weight: 700; cursor: pointer; min-height: 24px; }
+details p { margin: 10px 0 0; }
+footer {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px;
+  border-top: 1px solid #ECE6DE; padding-top: 20px; font-size: 14px; color: #6E6070;
+}
